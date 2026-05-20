@@ -1,3 +1,4 @@
+// Add to imports at top
 import React from 'react';
 import { ClassCard } from '../components/ClassCard';
 import { motion } from 'framer-motion';
@@ -5,92 +6,155 @@ import { useRole } from '../context/RoleContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import {
-  TrendingUp, AlertCircle, CheckCircle2,
-  Clock, Users, ShieldAlert, Loader2, RefreshCw
+  CheckCircle2, Clock, Users, ShieldAlert,
+  Loader2, GraduationCap, BookOpen, AlertCircle
 } from 'lucide-react';
 import { StudentDashboard } from './StudentDashboard';
 import { AdminHome } from './AdminHome';
 import api from '../lib/api';
 
-const teacherClasses = [
-  {
-    id: '1',
-    subject: "General Agric - SHS 1 Agric B",
-    className: "Lab Practical Ready",
-    status: "Lab Practical Ready",
-    progress: 100,
-    studentCount: 42,
-    hasRevision: false,
-    hasMissingObservation: false,
-  },
-  {
-    id: '2',
-    subject: "General Agric - SHS 1 Agric B",
-    className: "Lab Practical Ready",
-    status: "Lab Practical Ready",
-    progress: 45,
-    studentCount: 42,
-    color: "#f59e0b",
-    hasRevision: true,
-    hasMissingObservation: false,
-  },
-  {
-    id: '3',
-    subject: "General Agric - SHS 1 Agric B",
-    className: "Lab Practical Ready",
-    status: "Lab Practical Ready",
-    progress: 0,
-    studentCount: 42,
-    color: "#cbd5e1",
-    hasRevision: false,
-    hasMissingObservation: true,
-  },
-  {
-    id: '4',
-    subject: "General Agric - SHS 1 Agric B",
-    className: "Lab Practical Ready",
-    status: "Lab Practical Ready",
-    progress: 60,
-    studentCount: 42,
-    color: "#f59e0b",
-    hasRevision: true,
-    hasMissingObservation: true,
-  }
-];
+// ─── Types ─────────────────────────────────────────────────────────────────
+interface Assignment {
+  id: string;
+  subjectId: string;
+  classSectionId: string;
+  subject: { id: string; name: string; code: string; type: string };
+  classSection: {
+    id: string;
+    name: string;
+    level: string;
+    _count?: { students: number };
+  };
+}
+
+interface ClassStudent {
+  id: string;
+  indexNumber: string;
+  firstName: string;
+  lastName: string;
+  currentClass?: { id: string; name: string; level: string };
+  grades?: any[];
+  reportCards?: any[];
+}
 
 export function Dashboard() {
   const { user } = useRole();
   const navigate = useNavigate();
-  // ─── Teacher data ───────────────────────────────────────────────────────────
-  const [teacherAssignments, setTeacherAssignments] = React.useState<any[]>([]);
+
+  // ─── Teacher state ────────────────────────────────────────────────────────
+  const [teacherAssignments, setTeacherAssignments] = React.useState<Assignment[]>([]);
+  const [assignmentStudents, setAssignmentStudents] = 
+   React.useState<Record<string, ClassStudent[]>>({})
   const [isLoadingTeacher, setIsLoadingTeacher] = React.useState(false);
 
-  // ─── HOD data ───────────────────────────────────────────────────────────────
+  // ─── HOD state ────────────────────────────────────────────────────────────
   const [hodStats, setHodStats] = React.useState<any>(null);
+  const [hodAssignments, setHodAssignments] = React.useState<Assignment[]>([]);
+  const [hodStudents, setHodStudents] = React.useState<ClassStudent[]>([]);
+  const [hodTeachers, setHodTeachers] = React.useState<any[]>([]);
   const [isLoadingHOD, setIsLoadingHOD] = React.useState(false);
 
+  // ─── useEffect ───────────────────────────────────────────────────────────
   React.useEffect(() => {
-    if (user?.role === 'TEACHER') {
+    if (!user) return;
+
+    if (user.role === 'TEACHER') {
       setIsLoadingTeacher(true);
-      api.get(`/academic/assignments/teacher/${user.id}`)
-        .then(res => setTeacherAssignments(res.data))
+
+      const assignmentsUrl = user.staffProfileId
+        ? `/academic/assignments/teacher/${user.staffProfileId}`
+        : `/academic/assignments/teacher/${user.id}`;
+
+      api.get(assignmentsUrl)
+        .then(async res => {
+          const assignments: Assignment[] = res.data;
+          setTeacherAssignments(assignments);
+
+          const uniqueClassIds = [...new Set(assignments.map(a => a.classSectionId))];
+          const studentMap: Record<string, ClassStudent[]> = {};
+
+          await Promise.all(
+            uniqueClassIds.map(async classId => {
+              try {
+                const studentsRes = await api.get(`/users/students?classId=${classId}`);
+                studentMap[classId] = studentsRes.data;
+              } catch {
+                studentMap[classId] = [];
+              }
+            })
+          );
+
+          setAssignmentStudents(studentMap);
+        })
         .catch(() => {})
         .finally(() => setIsLoadingTeacher(false));
     }
 
-    if (user?.role === 'HOD') {
+    if (user.role === 'HOD') {
       setIsLoadingHOD(true);
+
+      const assignmentsUrl = user.staffProfileId
+        ? `/academic/assignments/teacher/${user.staffProfileId}`
+        : `/academic/assignments/teacher/${user.id}`;
+
       Promise.all([
         api.get('/archive/health'),
         api.get('/comms/analytics/pulse'),
+        api.get(assignmentsUrl),
+        api.get('/users/staff'),
       ])
-        .then(([healthRes, pulseRes]) => {
+        .then(async ([healthRes, pulseRes, assignRes, staffRes]) => {
           setHodStats({ health: healthRes.data, pulse: pulseRes.data });
+
+          const assignments: Assignment[] = assignRes.data;
+          setHodAssignments(assignments);
+
+          const allStaff = staffRes.data;
+          let deptTeachers: any[] = [];
+
+          if (user.departmentId) {
+            deptTeachers = allStaff.filter(
+              (s: any) =>
+                s.user?.role === 'TEACHER' &&
+                (s.departmentId === user.departmentId ||
+                  s.department?.id === user.departmentId)
+            );
+          } else {
+            deptTeachers = allStaff.filter((s: any) => s.user?.role === 'TEACHER');
+          }
+
+          setHodTeachers(deptTeachers);
+
+          const uniqueClassIds = [...new Set(assignments.map(a => a.classSectionId))];
+          const allStudents: ClassStudent[] = [];
+
+          await Promise.all(
+            uniqueClassIds.map(async classId => {
+              try {
+                const res = await api.get(`/users/students?classId=${classId}`);
+                allStudents.push(...res.data);
+              } catch {}
+            })
+          );
+
+          const unique = Array.from(
+            new Map(allStudents.map(s => [s.id, s])).values()
+          );
+          setHodStudents(unique);
         })
         .catch(() => {})
         .finally(() => setIsLoadingHOD(false));
     }
   }, [user]);
+
+  // ─── Role routing ────────────────────────────────────────────────────────
+  if (user?.role === 'STUDENT') return <StudentDashboard />;
+  if (
+    user?.role === 'ADMIN' ||
+    user?.role === 'SUPER_ADMIN' ||
+    user?.role === 'HEADMASTER'
+  ) return <AdminHome />;
+
 
   const renderTeacherDashboard = () => (
     <>
