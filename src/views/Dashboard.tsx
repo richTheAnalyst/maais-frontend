@@ -61,11 +61,6 @@ const teacherClasses = [
 export function Dashboard() {
   const { user } = useRole();
   const navigate = useNavigate();
-
-  /* const handleEnterMarks = (cls: any) => {
-    if (user?.role === 'STUDENT') return;
-    navigate('/grading');
-  }; */
   // ─── Teacher data ───────────────────────────────────────────────────────────
   const [teacherAssignments, setTeacherAssignments] = React.useState<any[]>([]);
   const [isLoadingTeacher, setIsLoadingTeacher] = React.useState(false);
