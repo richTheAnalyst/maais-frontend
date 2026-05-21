@@ -56,96 +56,150 @@ export function Dashboard() {
 
   // ─── useEffect ───────────────────────────────────────────────────────────
   React.useEffect(() => {
-    if (!user) return;
+  if (!user) return;
 
+  const run = async () => {
+
+    // ─── Teacher ─────────────────────────────────────
     if (user.role === 'TEACHER') {
       setIsLoadingTeacher(true);
 
-      const assignmentsUrl = user.staffProfileId
-        ? `/academic/assignments/teacher/${user.staffProfileId}`
-        : `/academic/assignments/teacher/${user.id}`;
+      try {
+        const assignmentsUrl = user.staffProfileId
+          ? `/academic/assignments/teacher/${user.staffProfileId}`
+          : `/academic/assignments/teacher/${user.id}`;
 
-      api.get(assignmentsUrl)
-        .then(async res => {
-          const assignments: Assignment[] = res.data;
-          setTeacherAssignments(assignments);
+        const res = await api.get(assignmentsUrl);
 
-          const uniqueClassIds = [...new Set(assignments.map(a => a.classSectionId))];
-          const studentMap: Record<string, ClassStudent[]> = {};
+        const assignments: Assignment[] = res.data;
+        setTeacherAssignments(assignments);
 
-          await Promise.all(
-            uniqueClassIds.map(async classId => {
-              try {
-                const studentsRes = await api.get(`/users/students?classId=${classId}`);
-                studentMap[classId] = studentsRes.data;
-              } catch {
-                studentMap[classId] = [];
-              }
-            })
-          );
+        const uniqueClassIds = [
+          ...new Set(assignments.map(a => a.classSectionId))
+        ];
 
-          setAssignmentStudents(studentMap);
-        })
-        .catch(() => {})
-        .finally(() => setIsLoadingTeacher(false));
+        const studentMap: Record<string, ClassStudent[]> = {};
+
+        await Promise.all(
+          uniqueClassIds.map(async classId => {
+            try {
+              const studentsRes = await api.get(
+                `/users/students?classId=${classId}`
+              );
+
+              studentMap[classId] = studentsRes.data;
+            } catch {
+              studentMap[classId] = [];
+            }
+          })
+        );
+
+        setAssignmentStudents(studentMap);
+
+      } catch (error) {
+        console.error('Teacher dashboard error:', error);
+      } finally {
+        setIsLoadingTeacher(false);
+      }
     }
 
+    // ─── HOD ─────────────────────────────────────────
     if (user.role === 'HOD') {
       setIsLoadingHOD(true);
 
-      const assignmentsUrl = user.staffProfileId
-        ? `/academic/assignments/teacher/${user.staffProfileId}`
-        : `/academic/assignments/teacher/${user.id}`;
+      try {
+        const assignmentsUrl = user.staffProfileId
+          ? `/academic/assignments/teacher/${user.staffProfileId}`
+          : `/academic/assignments/teacher/${user.id}`;
 
-      Promise.all([
-        api.get('/archive/health'),
-        api.get('/comms/analytics/pulse'),
-        api.get(assignmentsUrl),
-        api.get('/users/staff'),
-      ])
-        .then(async ([healthRes, pulseRes, assignRes, staffRes]) => {
-          setHodStats({ health: healthRes.data, pulse: pulseRes.data });
+        const [healthRes, pulseRes, assignRes, staffRes] =
+          await Promise.allSettled([
+            api.get('/archive/health'),
+            api.get('/comms/analytics/pulse'),
+            api.get(assignmentsUrl),
+            api.get('/users/staff'),
+          ]);
 
-          const assignments: Assignment[] = assignRes.data;
-          setHodAssignments(assignments);
+        const health =
+          healthRes.status === 'fulfilled'
+            ? healthRes.value.data
+            : null;
 
-          const allStaff = staffRes.data;
-          let deptTeachers: any[] = [];
+        const pulse =
+          pulseRes.status === 'fulfilled'
+            ? pulseRes.value.data
+            : null;
 
-          if (user.departmentId) {
-            deptTeachers = allStaff.filter(
-              (s: any) =>
-                s.user?.role === 'TEACHER' &&
-                (s.departmentId === user.departmentId ||
-                  s.department?.id === user.departmentId)
-            );
-          } else {
-            deptTeachers = allStaff.filter((s: any) => s.user?.role === 'TEACHER');
-          }
+        const assignments: Assignment[] =
+          assignRes.status === 'fulfilled'
+            ? assignRes.value.data
+            : [];
 
-          setHodTeachers(deptTeachers);
+        const allStaff =
+          staffRes.status === 'fulfilled'
+            ? staffRes.value.data
+            : [];
 
-          const uniqueClassIds = [...new Set(assignments.map(a => a.classSectionId))];
-          const allStudents: ClassStudent[] = [];
+        console.log('HEALTH:', health);
+        console.log('PULSE:', pulse);
 
-          await Promise.all(
-            uniqueClassIds.map(async classId => {
-              try {
-                const res = await api.get(`/users/students?classId=${classId}`);
-                allStudents.push(...res.data);
-              } catch {}
-            })
+        setHodStats({ health, pulse });
+        setHodAssignments(assignments);
+
+        let deptTeachers: any[] = [];
+
+        if (user.departmentId) {
+          deptTeachers = allStaff.filter(
+            (s: any) =>
+              s.user?.role === 'TEACHER' &&
+              (
+                s.departmentId === user.departmentId ||
+                s.department?.id === user.departmentId
+              )
           );
-
-          const unique = Array.from(
-            new Map(allStudents.map(s => [s.id, s])).values()
+        } else {
+          deptTeachers = allStaff.filter(
+            (s: any) => s.user?.role === 'TEACHER'
           );
-          setHodStudents(unique);
-        })
-        .catch(() => {})
-        .finally(() => setIsLoadingHOD(false));
+        }
+
+        setHodTeachers(deptTeachers);
+
+        const uniqueClassIds = [
+          ...new Set(assignments.map(a => a.classSectionId))
+        ];
+
+        const allStudents: ClassStudent[] = [];
+
+        await Promise.all(
+          uniqueClassIds.map(async classId => {
+            try {
+              const res = await api.get(
+                `/users/students?classId=${classId}`
+              );
+
+              allStudents.push(...res.data);
+            } catch {}
+          })
+        );
+
+        const uniqueStudents = Array.from(
+          new Map(allStudents.map(s => [s.id, s])).values()
+        );
+
+        setHodStudents(uniqueStudents);
+
+      } catch (error) {
+        console.error('HOD dashboard error:', error);
+      } finally {
+        setIsLoadingHOD(false);
+      }
     }
-  }, [user]);
+  };
+
+  run();
+
+}, [user]);
 
   // ─── Role routing ────────────────────────────────────────────────────────
   if (user?.role === 'STUDENT') return <StudentDashboard />;

@@ -19,32 +19,6 @@ import api from '../lib/api';
 
 
 
-/* const performanceData = [
-  { name: 'Science', score: 78, color: '#059669' },
-  { name: 'Business', score: 82, color: '#0284c7' },
-  { name: 'General Arts', score: 74, color: '#7c3aed' },
-  { name: 'Home Econ', score: 88, color: '#db2777' },
-  { name: 'Visual Arts', score: 68, color: '#ea580c' },
-];
-
-const activityLog = [
-  { id: '1', time: '10:15 AM', event: 'SHS 3 Science 2 marks finalized by HOD.', type: 'academic' },
-  { id: '2', time: '10:02 AM', event: 'Bulk SMS sent to SHS 1 Parents regarding PTA meeting.', type: 'comm' },
-  { id: '3', time: '09:45 AM', event: 'New Student (Index #4492) added to House: Guggisberg.', type: 'system' },
-  { id: '4', time: '09:12 AM', event: 'Server Sync: Database integrity check successful.', type: 'security' },
-  { id: '5', time: '08:30 AM', event: 'Madam Gladys requested Password Reset.', type: 'support' },
-];
-
-const pendingApprovals = [
-  { id: '1', teacher: 'Mr. Owusu', detail: 'Index #001 Grade Change (C6 -> B3)', time: '2h ago' },
-  { id: '2', teacher: 'Mrs. Appiah', detail: 'Bulk Delete: SHS 2 Test Drafts', time: '4h ago' },
-];
-
-const supportTickets = [
-  { id: '1', user: 'Madam Gladys', issue: 'Password reset encryption loop', status: 'priority' },
-  { id: '2', user: 'Chemistry Lab', issue: 'Tablet Node #14 sync error', status: 'active' },
-]; */
-
 function Sparkline({ color }: { color: string }) {
   return (
     <svg className="w-16 h-8 overflow-visible" viewBox="0 0 100 40">
