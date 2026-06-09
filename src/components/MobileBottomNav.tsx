@@ -35,7 +35,7 @@ export const MobileBottomNav: React.FC = () => {
         <span className="text-[10px] font-black uppercase tracking-widest">People</span>
       </NavLink>
 
-      <NavLink 
+     {/*  <NavLink 
         to="/academic-architect"
         className={({ isActive }) => cn(
           "flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all",
@@ -44,9 +44,9 @@ export const MobileBottomNav: React.FC = () => {
       >
         <Cpu size={20} />
         <span className="text-[10px] font-black uppercase tracking-widest">Engine</span>
-      </NavLink>
+      </NavLink> */}
 
-      <NavLink 
+     {/*  <NavLink 
         to="/comms"
         className={({ isActive }) => cn(
           "flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all",
@@ -55,7 +55,7 @@ export const MobileBottomNav: React.FC = () => {
       >
         <MessageSquare size={20} />
         <span className="text-[10px] font-black uppercase tracking-widest">Comms</span>
-      </NavLink>
+      </NavLink> */}
 
       <button 
         onClick={() => setMobileMenuOpen(true)}

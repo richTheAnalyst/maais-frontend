@@ -38,23 +38,23 @@ export function MobileDrawer() {
     { icon: Users, label: 'Parent Registry', id: 'parents', path: '/identity/parents', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
     
     // Engine Room
-    { icon: Cpu, label: 'Academic Blueprint', id: 'architect', path: '/academic-architect', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
+   /*  { icon: Cpu, label: 'Academic Blueprint', id: 'architect', path: '/academic-architect', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
     { icon: GraduationCap, label: 'Grading Rules', id: 'grading-admin', path: '/grading', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
-    
+     */
     // Scheduling
     { icon: Calendar, label: 'Timetable', id: 'timetable', path: '/timetable', roles: ['TEACHER', 'STUDENT', 'ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
     
     // Finance
-    { icon: Database, label: 'Finance & Assets', id: 'finance', path: '/finance', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
-    
+/*     { icon: Database, label: 'Finance & Assets', id: 'finance', path: '/finance', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
+ */    
     // Comms
-    { icon: MessageSquare, label: 'Notice Board', id: 'comms', path: '/comms', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
-    
+/*     { icon: MessageSquare, label: 'Notice Board', id: 'comms', path: '/comms', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
+ */    
     // Vault
-    { icon: ShieldCheck, label: 'User Roles', id: 'system', path: '/system', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
+   /*  { icon: ShieldCheck, label: 'User Roles', id: 'system', path: '/system', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
     { icon: FileText, label: 'Extended Logs', id: 'audit-ext', path: '/audit/extended', roles: ['ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
     { icon: FileText, label: 'Academic Audit', id: 'audit', path: '/audit', roles: ['HOD', 'ADMIN', 'SUPER_ADMIN', 'HEADMASTER'] },
-
+ */
     // Role specific
     { icon: AlertCircle, label: 'Revisions', id: 'revisions', path: '/revisions', roles: ['TEACHER'], badge: 3 },
     { icon: ClipboardCheck, label: 'Missing Observations', id: 'missing-obs', path: '/missing-observations', roles: ['TEACHER'], badge: 5, badgeColor: 'bg-amber-500' },
@@ -62,6 +62,7 @@ export function MobileDrawer() {
     { icon: Database, label: 'Archive', id: 'archive', path: '/archive', roles: ['TEACHER', 'HOD'] },
     { icon: ShieldCheck, label: 'Certification', id: 'certification', path: '/certification', roles: ['HOD'] },
     { icon: TrendingUp, label: 'Journey', id: 'journey', path: '/journey', roles: ['STUDENT'] },
+     
   ];
 
   const filteredItems = navItems.filter(item => user && item.roles.includes(user.role));
@@ -173,7 +174,7 @@ export function MobileDrawer() {
                   </>
                 ) : (
                   <>
-                    <button 
+                    {/* <button 
                       onClick={() => {
                         setMobileMenuOpen(false);
                         setSupportModalOpen(true);
@@ -182,8 +183,8 @@ export function MobileDrawer() {
                     >
                       <LifeBuoy size={20} className="text-slate-400" />
                       ICT Support
-                    </button>
-                    <button 
+                    </button> */}
+                    {/* <button 
                       onClick={() => {
                         setMobileMenuOpen(false);
                         setSettingsModalOpen(true);
@@ -192,7 +193,7 @@ export function MobileDrawer() {
                     >
                       <Settings size={20} className="text-slate-400" />
                       Settings
-                    </button>
+                    </button> */}
                   </>
                 )}
               </div>

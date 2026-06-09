@@ -64,7 +64,7 @@ export function Sidebar() {
     },
 
     // 3. ACADEMIC ARCHITECT (The Engine Room)
-    { 
+    /* { 
       icon: Cpu, 
       label: 'Engine Room', 
       id: 'architect', 
@@ -74,7 +74,7 @@ export function Sidebar() {
         { label: 'Subject Curriculum', path: '/academic-architect' },
         { label: 'Grading Rules', path: '/grading' }
       ]
-    },
+    }, */
 
     // 4. SCHEDULING & TIMETABLE
     { 
@@ -89,13 +89,13 @@ export function Sidebar() {
     },
 
     // 5. FINANCE & PROCUREMENT
-    { 
+    /* { 
       icon: Wallet, 
       label: 'Finance', 
       id: 'finance', 
       path: '/finance',
       roles: ['SUPER_ADMIN', 'HEADMASTER']
-    },
+    }, */
 
     // 6. COMMUNICATIONS & REPORTS
     { 
@@ -107,7 +107,7 @@ export function Sidebar() {
     },
 
     // 7. SYSTEM SETTINGS (The "Vault")
-    { 
+   /*  { 
       icon: ShieldCheck, 
       label: 'Vault', 
       id: 'vault', 
@@ -118,7 +118,7 @@ export function Sidebar() {
         { label: 'System Forensics', path: '/audit/extended' },
         { label: 'Academic Audit', path: '/audit' }
       ]
-    },
+    }, */
 
     // FALLBACKS FOR OTHER ROLES (TEACHERS, HODs, STUDENTS)
     { icon: Calendar, label: 'Timetable', id: 'timetable', path: '/timetable', roles: ['TEACHER', 'STUDENT'] },
