@@ -57,8 +57,8 @@ export function Sidebar() {
       roles: ['SUPER_ADMIN', 'HEADMASTER'],
       subItems: [
         { label: 'Staff Directory', path: '/identity/staff' },
-        { label: 'Departmental Hierarchy', path: '/identity/departments' },
-        { label: 'Student Registry', path: '/identity/students' },
+/*         { label: 'Departmental Hierarchy', path: '/identity/departments' },
+ */        { label: 'Student Registry', path: '/identity/students' },
         { label: 'Parent Registry', path: '/identity/parents' }
       ]
     },
@@ -98,14 +98,14 @@ export function Sidebar() {
     }, */
 
     // 6. COMMUNICATIONS & REPORTS
-    { 
+    /* { 
       icon: MessageSquare, 
       label: 'Comms', 
       id: 'comms', 
       path: '/comms',
       roles: ['SUPER_ADMIN', 'HEADMASTER']
     },
-
+ */
     // 7. SYSTEM SETTINGS (The "Vault")
    /*  { 
       icon: ShieldCheck, 
@@ -124,7 +124,7 @@ export function Sidebar() {
     { icon: Calendar, label: 'Timetable', id: 'timetable', path: '/timetable', roles: ['TEACHER', 'STUDENT'] },
     { icon: AlertCircle, label: 'Revisions', id: 'revisions', path: '/revisions', roles: ['TEACHER', 'HOD'], badge: 3 },
     { icon: ClipboardCheck, label: 'Missing Observations', id: 'missing-obs', path: '/missing-observations', roles: ['TEACHER', 'HOD'], badge: 5, badgeColor: 'bg-amber-500' },
-    { icon: GraduationCap, label: 'Grading', id: 'grading', path: '/grading', roles: ['TEACHER', 'HOD'] },
+    { icon: GraduationCap, label: 'Grading', id: 'grading', path: '/grading', roles: ['TEACHER', 'HOD', 'SUPER_ADMIN'] },
     { icon: Database, label: 'Archive', id: 'archive', path: '/archive', roles: ['SUPER_ADMIN', 'HEADMASTER', 'TEACHER', 'HOD'] },
     { icon: ShieldCheck, label: 'Certification', id: 'certification', path: '/certification', roles: ['HOD'], badge: 2, badgeColor: 'bg-emerald-600' },
     { icon: TrendingUp, label: 'Journey', id: 'journey', path: '/journey', roles: ['STUDENT'] },
@@ -262,20 +262,20 @@ export function Sidebar() {
             </>
           ) : (
             <>
-              <button 
+              {/* <button 
                 onClick={() => setSupportModalOpen(true)}
                 className="p-3 rounded-2xl text-slate-400 hover:bg-white hover:text-slate-600 transition-all duration-200"
                 title="ICT Support"
               >
                 <LifeBuoy size={22} />
-              </button>
-              <button 
+              </button> */}
+              {/* <button 
                 onClick={() => setSettingsModalOpen(true)}
                 className="p-3 rounded-2xl text-slate-400 hover:bg-white hover:text-slate-600 transition-all duration-200"
                 title="Settings"
               >
                 <Settings size={22} />
-              </button>
+              </button> */}
             </>
           )}
           <button 
