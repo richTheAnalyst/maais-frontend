@@ -21,7 +21,7 @@ function mapBackendUser(backendUser: any): User {
   // Map backend roles to frontend roles
   const roleMap: Record<string, UserRole> = {
     SUPER_ADMIN: 'SUPER_ADMIN',
-    HEADMASTER: 'HEADMASTER',
+    HEADMASTER: 'ADMIN',
     HOD: 'HOD',
     TEACHER: 'TEACHER',
     STUDENT: 'STUDENT',
@@ -33,7 +33,8 @@ function mapBackendUser(backendUser: any): User {
     username: backendUser.email.split('@')[0],
     name,
     role: roleMap[backendUser.role] ?? backendUser.role,
-    departmentId: profile?.departmentId ?? undefined,
+     departmentId: backendUser.staffProfile?.departmentId ?? backendUser.staffProfile?.department?.id ?? undefined,
+     staffProfileId: backendUser.staffProfile?.id ?? undefined,
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendUser.id}`,
   };
 }
