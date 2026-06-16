@@ -35,6 +35,8 @@ function mapBackendUser(backendUser: any): User {
     role: roleMap[backendUser.role] ?? backendUser.role,
      departmentId: backendUser.staffProfile?.departmentId ?? backendUser.staffProfile?.department?.id ?? undefined,
      staffProfileId: backendUser.staffProfile?.id ?? undefined,
+
+     studentProfileId: backendUser.studentProfile?.id ?? undefined,
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendUser.id}`,
   };
 }

@@ -108,16 +108,40 @@ export function StudentDashboard() {
       if (!user?.id) return;
       setIsLoading(true);
       try {
-        const studentId = (user as any).studentProfileId || user.id;
-        const res = await api.get(`/users/students/${studentId}`);
-        
-        console.log('Fetched student profile:', res.data);
-        console.log('grades: ', res.data.grades);
-        console.log('reportCards: ', res.data.reportCards);
-        setProfile(res.data);
+        //try one
+        const studentProfileId = (user as any).studentProfileId;
+        if (studentProfileId) {
+                  const res = await api.get(`/users/students/${studentProfileId}`);
+                  setProfile(res.data)
+                  return;
+        }
+        //try two
+        const listRes = await api.get('/users/students');
+        const matched = listRes.data.find(
+          (s: any) => 
+            s.user?.email === user.username + '@student.mandoshts.edu.gh' ||
+          s.user?.email === user.username ||
+          s.id === user.id
+        )
+        if (matched) {
+          //getting full profile with grades and reportcards
+          const fullRes = await api.get('/users/students/${matched.id}');
+          setProfile(fullRes.data);
+          return;
+        }
+
+        //try three"portal endpoint"
+        try {
+          const portalRes = await api.get('/portal/students/${user.id}/portal-data');
+          setProfile(portalRes.data)
+          return;
+        } catch {}
+
+        setProfile(null)
       } 
       catch (err) {
         console.error('Error fetching student profile:', err);
+        setProfile(null);
       }
       finally {
         setIsLoading(false);
