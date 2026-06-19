@@ -72,7 +72,7 @@ export function AdminHome() {
   const [activeAction, setActiveAction] = React.useState<string | null>(null);
   const [isFreezeActive, setIsFreezeActive] = React.useState(false);
 
-  // ─── Real data ─────────────────────────────────────────────────────────────
+  // ─── Real data  states─────────────────────────────────────────────────────────────
   const [pulse, setPulse] = React.useState<PulseData | null>(null);
   const [health, setHealth] = React.useState<HealthData | null>(null);
   const [auditLogs, setAuditLogs] = React.useState<AuditLog[]>([]);

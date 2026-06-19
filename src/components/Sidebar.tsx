@@ -81,7 +81,7 @@ export function Sidebar() {
       icon: Clock, 
       label: 'Scheduling', 
       id: 'scheduling', 
-      roles: ['SUPER_ADMIN', 'HEADMASTER', 'TEACHER', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'HEADMASTER', 'TEACHER'],
       subItems: [
         { label: 'Master Timetable', path: '/timetable' },
         { label: 'Event Calendar', path: '/timetable' }
