@@ -503,11 +503,41 @@ export function GradingSheet() {
 
   // ─── Submit to HOD ──────────────────────────────────────────────────────────
   const handleSubmitToHOD = async () => {
+  if (!selectedClass || !selectedSubject) return;
+  setIsSubmitting(true);
+  try {
     await saveAllGrades();
-    setIsSubmitting(false);
-    setSuccessMsg("Grades submitted to HOD for review");
+
+    // Find the HOD for this subject's department
+    const staffRes = await api.get('/users/staff');
+    const hods = staffRes.data.filter((s: any) =>
+      s.user?.role === 'HOD' &&
+      (s.departmentId === (selectedSubject as any).departmentId ||
+       s.department?.id === (selectedSubject as any).departmentId)
+    );
+
+    if (hods.length === 0) {
+      setSuccessMsg('Grades saved. No HOD found for this department to notify.');
+      setTimeout(() => setSuccessMsg(null), 4000);
+      return;
+    }
+
+    const hodIds = hods.map((h: any) => h.id);
+    await api.post('/comms/notify-staff', {
+      staffIds: hodIds,
+      title: 'Grade Submission for Review',
+      body: `${user?.name} submitted grades for ${selectedSubject.name} — ${selectedClass.level.replace('FORM_', 'Form ')} ${selectedClass.name}. ${students.length} students, ${Object.values(gradeRows).filter(r => r.classScore > 0 || r.examScore > 0).length} entries.`,
+    });
+
+    setSuccessMsg(`Grades submitted — ${hods.length} HOD${hods.length > 1 ? 's' : ''} notified`);
     setTimeout(() => setSuccessMsg(null), 4000);
-  };
+  } catch (err: any) {
+    setError(err.response?.data?.message || 'Submission failed');
+    setTimeout(() => setError(null), 4000);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // ─── STP Validation ─────────────────────────────────────────────────────────
   const stpErrors = React.useMemo(() => {

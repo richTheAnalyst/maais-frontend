@@ -63,6 +63,7 @@ export function Dashboard() {
   const [hodStudents, setHodStudents] = React.useState<ClassStudent[]>([]);
   const [hodTeachers, setHodTeachers] = React.useState<any[]>([]);
   const [isLoadingHOD, setIsLoadingHOD] = React.useState(false);
+  const [hodNotifications, setHodNotifications] = React.useState<any[]>([]);
 
   // ─── useEffect ───────────────────────────────────────────────────────────
   React.useEffect(() => {
@@ -119,6 +120,19 @@ export function Dashboard() {
           const assignmentsUrl = user.staffProfileId
             ? `/academic/assignments/teacher/${user.staffProfileId}`
             : `/academic/assignments/teacher/${user.id}`;
+
+          if (user.staffProfileId) {
+            try {
+              const notifRes = await api.get(
+                `/comms/staff-notifications/${user.staffProfileId}`,
+                {
+                  params: { unreadOnly: true },
+                },
+              );
+              
+              setHodNotifications(notifRes.data);
+            } catch {}
+          }
 
           const [healthRes, pulseRes, assignRes, staffRes] =
             await Promise.allSettled([
@@ -407,6 +421,24 @@ export function Dashboard() {
             </div>
           ))}
         </div>
+        {hodNotifications.length > 0 && (
+          <div className="bg-amber-50 border border-amber-100 rounded-3xl p-6">
+            <h3 className="text-[12px] font-black text-amber-900 uppercase tracking-widest mb-4">
+              Pending Submissions ({hodNotifications.length})
+            </h3>
+            <div className="space-y-2">
+              {hodNotifications.map((n: any) => (
+                <div
+                  key={n.id}
+                  className="bg-white p-4 rounded-2xl border border-amber-100"
+                >
+                  <p className="text-sm font-bold text-slate-900">{n.title}</p>
+                  <p className="text-xs text-slate-500 mt-1">{n.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Department Teachers */}
