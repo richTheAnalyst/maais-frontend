@@ -7,7 +7,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
-import { RightPanel } from './components/RightPanel';
 import { Dashboard } from './views/Dashboard';
 import { AuditLogsView } from './views/AuditLogsView';
 import { GradingSheet } from './views/GradingSheet';
@@ -184,7 +183,7 @@ function AppContent() {
             </Routes>
           {isDashboard && (user?.role !== 'SUPER_ADMIN' && user?.role !== 'HEADMASTER') && (
             <div className="hidden xl:block">
-              <RightPanel />
+              
             </div>
           )}
         </main>

@@ -56,6 +56,10 @@ interface Intervention {
 }
 
 interface ScholasticArchiveStudent extends ArchiveStudent {
+  firstName: string;
+  lastName: string;
+  indexNumber: string;
+  archivedAt?: string;
   interventions: Intervention[];
   consistencyScore: "Steady" | "Volatile" | "Improving";
   percentileHistory: { term: string; percentile: number }[];

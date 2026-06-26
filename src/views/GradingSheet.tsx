@@ -316,6 +316,7 @@ export function GradingSheet() {
                 hasObservation: false,
                 observationText: "",
                 isLocked: false,
+                isApproved: false,
               };
             }
           }),
@@ -700,13 +701,13 @@ export function GradingSheet() {
                 ))}
               </select>
 
-              <button
+             {/*  <button
                 onClick={() => setShowSTPOverlay(true)}
                 className="p-2.5 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-all flex items-center gap-2 font-black text-xs uppercase tracking-widest"
               >
                 <Zap size={16} />
                 STP
-              </button>
+              </button> */}
 
               {!isSidebarOpen && (
                 <button
