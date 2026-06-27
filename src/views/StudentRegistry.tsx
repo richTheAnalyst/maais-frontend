@@ -9,6 +9,8 @@ import {
   Phone, MessageSquare, Activity,
   BarChart3, AlertCircle, Loader2, RefreshCw
 } from 'lucide-react';
+import { ImportExportModal } from '../components/ImportExportModal';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import {
@@ -80,6 +82,8 @@ const StudentDossier: React.FC<{
   const [activeTab, setActiveTab] = useState<'Academic' | 'BioData' | 'Guardian'>('Academic');
   const [grades, setGrades] = useState<any[]>([]);
   const [loadingGrades, setLoadingGrades] = useState(false);
+  const [showImportExport, setShowImportExport] = useState(false);
+
 
   const fullName = `${student.firstName} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName}`;
 
@@ -272,6 +276,7 @@ const EnrolModal: React.FC<{
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showImportExport, setShowImportExport] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,6 +312,7 @@ const EnrolModal: React.FC<{
             <h3 className="text-xl font-black text-slate-900">Enrol New Student</h3>
             <p className="text-xs text-slate-400 mt-1">Add a student to the registry</p>
           </div>
+         
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl">
             <X size={20} />
           </button>
@@ -535,6 +541,8 @@ export const StudentRegistry: React.FC = () => {
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [isRunningPromotion, setIsRunningPromotion] = useState(false);
   const [promotionResult, setPromotionResult] = useState<any>(null);
+  const [showImportExport, setShowImportExport] = useState(false);
+
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -672,7 +680,7 @@ export const StudentRegistry: React.FC = () => {
               <span className="text-slate-900">Student Dynamic Ledger</span>
             </div>
             <h1 className="text-2xl font-black text-slate-900 italic font-display tracking-tight leading-none">
-              Institutional Population Intelligence
+              STUDENT ENROLLMENT
             </h1>
             <p className="text-xs text-slate-400 mt-1 font-medium">
               {students.length} active students
@@ -685,12 +693,28 @@ export const StudentRegistry: React.FC = () => {
             >
               <RefreshCw size={16} />
             </button>
-            <button
+           {/*  <button
               onClick={() => setIsPromoting(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20"
             >
               <TrendingUp size={16} /> Promotion Engine
-            </button>
+            </button> */}
+             <button
+            onClick={() => setShowImportExport(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+          >
+            <FileUp size={16} /> Import / Export
+          </button>
+
+          <AnimatePresence>
+            {showImportExport && (
+              <ImportExportModal
+                entity="students"
+                onClose={() => setShowImportExport(false)}
+                onImportSuccess={fetchData}
+              />
+            )}
+          </AnimatePresence>
             <button
               onClick={() => setShowEnrolModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20"

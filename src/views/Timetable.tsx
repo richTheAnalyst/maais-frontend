@@ -4,7 +4,8 @@ import {
   Calendar, Clock, MapPin, ChevronRight,
   LayoutGrid, List, Timer, ShieldAlert,
   AlertTriangle, Plus, X, Loader2,
-  RefreshCw, BookOpen, GraduationCap, ArrowRight
+  RefreshCw, BookOpen, GraduationCap, ArrowRight,
+  Settings2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -32,6 +33,11 @@ interface TimetableEntry {
 interface ClassSection { id: string; name: string; level: string }
 interface Subject { id: string; name: string; code: string }
 interface StaffMember { id: string; firstName: string; lastName: string; staffId: string }
+interface SchoolSettings {
+  id: string;
+  clashDetectionEnabled: boolean;
+  departmentColorsEnabled: boolean;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -48,6 +54,8 @@ const TYPE_COLORS: Record<string, string> = {
   Mathematics: 'bg-purple-50 border-purple-200 text-purple-800',
   default: 'bg-white border-slate-200 text-slate-800',
 };
+
+const NEUTRAL_COLOR = 'bg-white border-slate-200 text-slate-800';
 
 // ─── Add Entry Modal ──────────────────────────────────────────────────────────
 
@@ -171,6 +179,73 @@ const AddEntryModal: React.FC<{
   );
 };
 
+// ─── Settings Modal ───────────────────────────────────────────────────────────
+
+const SettingsModal: React.FC<{
+  settings: SchoolSettings;
+  onClose: () => void;
+  onToggle: (key: 'clashDetectionEnabled' | 'departmentColorsEnabled') => void;
+  isSaving: boolean;
+}> = ({ settings, onClose, onToggle, isSaving }) => (
+  <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
+    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-black text-slate-900">Timetable Settings</h3>
+        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+          <div className="pr-4">
+            <p className="text-sm font-bold text-slate-900">Clash Detection</p>
+            <p className="text-xs text-slate-400 mt-0.5">Highlight overlapping teacher schedules</p>
+          </div>
+          <button
+            onClick={() => onToggle('clashDetectionEnabled')}
+            disabled={isSaving}
+            className={cn(
+              'w-12 h-7 rounded-full relative transition-colors shrink-0',
+              settings.clashDetectionEnabled ? 'bg-emerald-600' : 'bg-slate-200'
+            )}
+          >
+            <motion.div
+              className="w-5 h-5 bg-white rounded-full absolute top-1 shadow-sm"
+              animate={{ left: settings.clashDetectionEnabled ? '26px' : '4px' }}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+          <div className="pr-4">
+            <p className="text-sm font-bold text-slate-900">Department Colors</p>
+            <p className="text-xs text-slate-400 mt-0.5">Color-code sessions by department</p>
+          </div>
+          <button
+            onClick={() => onToggle('departmentColorsEnabled')}
+            disabled={isSaving}
+            className={cn(
+              'w-12 h-7 rounded-full relative transition-colors shrink-0',
+              settings.departmentColorsEnabled ? 'bg-emerald-600' : 'bg-slate-200'
+            )}
+          >
+            <motion.div
+              className="w-5 h-5 bg-white rounded-full absolute top-1 shadow-sm"
+              animate={{ left: settings.departmentColorsEnabled ? '26px' : '4px' }}
+            />
+          </button>
+        </div>
+      </div>
+
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6 text-center">
+        Applies school-wide for all users
+      </p>
+    </motion.div>
+  </div>
+);
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function Timetable() {
@@ -181,6 +256,7 @@ export function Timetable() {
   const [classes, setClasses] = React.useState<ClassSection[]>([]);
   const [subjects, setSubjects] = React.useState<Subject[]>([]);
   const [teachers, setTeachers] = React.useState<StaffMember[]>([]);
+  const [settings, setSettings] = React.useState<SchoolSettings | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [clashes, setClashes] = React.useState<any[]>([]);
 
@@ -189,6 +265,8 @@ export function Timetable() {
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [showAddModal, setShowAddModal] = React.useState(false);
+  const [showSettingsModal, setShowSettingsModal] = React.useState(false);
+  const [isSavingSettings, setIsSavingSettings] = React.useState(false);
   const [selectedEntry, setSelectedEntry] = React.useState<TimetableEntry | null>(null);
 
   // Live clock
@@ -201,17 +279,17 @@ export function Timetable() {
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      // Determine what to fetch based on role
       let entriesUrl = '/timetable';
       if (user?.staffProfileId) {
         entriesUrl = `/timetable/teacher/${user.staffProfileId}`;
       }
 
-      const [entriesRes, classesRes, subjectsRes, staffRes] = await Promise.all([
+      const [entriesRes, classesRes, subjectsRes, staffRes, settingsRes] = await Promise.all([
         api.get(entriesUrl),
         api.get('/academic/classes'),
         api.get('/academic/subjects'),
         api.get('/users/staff'),
+        api.get('/settings'),
       ]);
 
       setEntries(entriesRes.data);
@@ -223,13 +301,17 @@ export function Timetable() {
         lastName: s.lastName,
         staffId: s.staffId,
       })));
+      setSettings(settingsRes.data);
 
-      // Detect clashes
-      if (user?.staffProfileId) {
+      if (user?.staffProfileId && settingsRes.data.clashDetectionEnabled) {
         try {
           const clashRes = await api.get(`/timetable/clashes/${user.staffProfileId}`);
           setClashes(clashRes.data);
-        } catch {}
+        } catch {
+          setClashes([]);
+        }
+      } else {
+        setClashes([]);
       }
     } catch (err) {
       console.error('Failed to load timetable', err);
@@ -239,6 +321,31 @@ export function Timetable() {
   }, [user]);
 
   React.useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ─── Settings toggle ──────────────────────────────────────────────────────
+  const handleToggleSetting = async (key: 'clashDetectionEnabled' | 'departmentColorsEnabled') => {
+    if (!settings) return;
+    setIsSavingSettings(true);
+    try {
+      const res = await api.patch('/settings', { [key]: !settings[key] });
+      setSettings(res.data);
+
+      if (key === 'clashDetectionEnabled') {
+        if (!res.data.clashDetectionEnabled) {
+          setClashes([]);
+        } else if (user?.staffProfileId) {
+          try {
+            const clashRes = await api.get(`/timetable/clashes/${user.staffProfileId}`);
+            setClashes(clashRes.data);
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to update settings');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   // Helpers
   const formatTime = (d: Date) => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -266,8 +373,14 @@ export function Timetable() {
   const canManage = user?.role === 'ADMIN' || user?.role === 'HOD';
 
   const entryColor = (entry: TimetableEntry) => {
+    if (!settings?.departmentColorsEnabled) return NEUTRAL_COLOR;
     const dept = entry.subject?.department?.name ?? 'default';
     return TYPE_COLORS[dept] ?? TYPE_COLORS.default;
+  };
+
+  const isEntryClashing = (entryId: string) => {
+    if (!settings?.clashDetectionEnabled) return false;
+    return clashes.some(c => c.a.id === entryId || c.b.id === entryId);
   };
 
   if (isLoading) {
@@ -296,7 +409,12 @@ export function Timetable() {
               <div className="flex items-center gap-2 mt-0.5">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  {entries.length} sessions · {clashes.length > 0 ? `${clashes.length} clash${clashes.length > 1 ? 'es' : ''}` : 'No clashes'}
+                  {entries.length} sessions
+                  {settings?.clashDetectionEnabled && (
+                    clashes.length > 0
+                      ? ` · ${clashes.length} clash${clashes.length > 1 ? 'es' : ''}`
+                      : ' · No clashes'
+                  )}
                 </p>
               </div>
             </div>
@@ -315,9 +433,14 @@ export function Timetable() {
               </button>
             </div>
             {canManage && (
-              <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-700/20">
-                <Plus size={16} /> Add Session
-              </button>
+              <>
+                <button onClick={() => setShowSettingsModal(true)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-slate-700 transition-all">
+                  <Settings2 size={16} />
+                </button>
+                <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-700/20">
+                  <Plus size={16} /> Add Session
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -363,7 +486,7 @@ export function Timetable() {
                 )}
               </div>
             </div>
-            {clashes.length > 0 && (
+            {settings?.clashDetectionEnabled && clashes.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-100 rounded-xl">
                 <AlertTriangle size={12} className="text-rose-500" />
                 <span className="text-[9px] font-black text-rose-600 uppercase">{clashes.length} Clash{clashes.length > 1 ? 'es' : ''}</span>
@@ -422,7 +545,7 @@ export function Timetable() {
                       {dayEntries.map(entry => {
                         const top = getTimePercent(entry.startTime);
                         const height = getTimePercent(entry.endTime) - top;
-                        const isClash = clashes.some(c => c.a.id === entry.id || c.b.id === entry.id);
+                        const isClash = isEntryClashing(entry.id);
                         const isHovered = hoveredId === entry.id;
 
                         return (
@@ -513,7 +636,7 @@ export function Timetable() {
                   .sort((a, b) => a.startTime.localeCompare(b.startTime))
                   .map(entry => {
                     const isActive = selectedDay === currentDay && nowStr >= entry.startTime && nowStr <= entry.endTime;
-                    const isClash = clashes.some(c => c.a.id === entry.id || c.b.id === entry.id);
+                    const isClash = isEntryClashing(entry.id);
 
                     return (
                       <motion.div
@@ -672,6 +795,18 @@ export function Timetable() {
             teachers={teachers}
             onClose={() => setShowAddModal(false)}
             onSuccess={() => { fetchData(); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettingsModal && settings && (
+          <SettingsModal
+            settings={settings}
+            onClose={() => setShowSettingsModal(false)}
+            onToggle={handleToggleSetting}
+            isSaving={isSavingSettings}
           />
         )}
       </AnimatePresence>

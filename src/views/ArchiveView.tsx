@@ -106,8 +106,34 @@ export function ArchiveView() {
   const [promotionResult, setPromotionResult] = React.useState<any>(null);
   const [showPromotionConfirm, setShowPromotionConfirm] = React.useState(false);
   const [showAdvanceConfirm, setShowAdvanceConfirm] = React.useState(false);
+  const [showUnlockConfirm, setShowUnlockConfirm] = React.useState<any>(null);
+  const [unlockReason, setUnlockReason] = React.useState("");
+  const [isUnlocking, setIsUnlocking] = React.useState(false);
 
   //functions
+
+  const handleUnlockTerm = async () => {
+    if (!showUnlockConfirm || !unlockReason.trim()) return;
+    setIsUnlocking(true);
+    try {
+      const res = await api.patch(
+        `/academic/terms/${showUnlockConfirm.id}/unlock`,
+        { reason: unlockReason },
+      );
+      if (res.data.existingReportCardsWarning) {
+        alert(
+          `Term unlocked. Warning: ${res.data.existingReportCardsWarning} report cards already exist for this term and may become stale if grades change.`,
+        );
+      }
+      setShowUnlockConfirm(null);
+      setUnlockReason("");
+      await fetchPromotionData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to unlock term");
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
   const fetchVault = React.useCallback(async () => {
     setIsLoadingVault(true);
     try {
@@ -384,9 +410,19 @@ export function ArchiveView() {
                                     </span>
                                   )}
                                   {term.isLocked && !term.isActive && (
-                                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase">
-                                      <Lock size={10} /> Locked
-                                    </span>
+                                    <div className="space-y-2">
+                                      <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase">
+                                        <Lock size={10} /> Locked
+                                      </span>
+                                      <button
+                                        onClick={() =>
+                                          setShowUnlockConfirm(term)
+                                        }
+                                        className="block w-full text-[9px] font-black text-rose-500 uppercase tracking-widest hover:underline mt-1"
+                                      >
+                                        Unlock
+                                      </button>
+                                    </div>
                                   )}
                                   {!term.isLocked && !term.isActive && (
                                     <span className="text-[10px] font-black text-slate-300 uppercase">
@@ -396,6 +432,83 @@ export function ArchiveView() {
                                 </div>
                               ))}
                             </div>
+
+                            {/* unlock confirmation modal */}
+                            <AnimatePresence>
+                              {showUnlockConfirm && (
+                                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+                                  <div
+                                    className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                                    onClick={() => setShowUnlockConfirm(null)}
+                                  />
+                                  <motion.div
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="relative w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-2xl"
+                                  >
+                                    <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mb-6">
+                                      <AlertCircle size={28} />
+                                    </div>
+                                    <h3 className="text-2xl font-black italic font-display text-slate-900 mb-3">
+                                      Unlock{" "}
+                                      {showUnlockConfirm.termNumber.replace(
+                                        "TERM_",
+                                        "Term ",
+                                      )}
+                                      ?
+                                    </h3>
+                                    <p className="text-sm text-slate-500 mb-6">
+                                      This term was previously locked. Unlocking
+                                      allows teachers to edit grades again. If
+                                      report cards have already been generated
+                                      and downloaded, they will become out of
+                                      sync if you change grades after this.
+                                    </p>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                                      Reason for unlocking (required, will be
+                                      audit logged)
+                                    </label>
+                                    <textarea
+                                      value={unlockReason}
+                                      onChange={(e) =>
+                                        setUnlockReason(e.target.value)
+                                      }
+                                      placeholder="e.g. Correction needed for Form 2B Mathematics scores"
+                                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium outline-none mb-6 resize-none"
+                                      rows={3}
+                                    />
+                                    <div className="flex gap-3">
+                                      <button
+                                        onClick={() => {
+                                          setShowUnlockConfirm(null);
+                                          setUnlockReason("");
+                                        }}
+                                        className="flex-1 py-4 bg-slate-50 rounded-2xl text-xs font-black uppercase tracking-widest"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={handleUnlockTerm}
+                                        disabled={
+                                          isUnlocking || !unlockReason.trim()
+                                        }
+                                        className="flex-1 py-4 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
+                                      >
+                                        {isUnlocking ? (
+                                          <Loader2
+                                            size={14}
+                                            className="animate-spin"
+                                          />
+                                        ) : (
+                                          <Lock size={14} />
+                                        )}
+                                        Confirm Unlock
+                                      </button>
+                                    </div>
+                                  </motion.div>
+                                </div>
+                              )}
+                            </AnimatePresence>
 
                             <div className="mt-10 flex justify-center">
                               {isFinalTerm ? (
@@ -753,35 +866,6 @@ export function ArchiveView() {
                 </div>
 
                 <div className="flex flex-wrap gap-4 items-center">
-                  {/* Subject Selector */}
-                  {/* <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-gray-200 shadow-sm">
-                    <Filter size={16} className="text-emerald-700" />
-                    <select
-                      value={selectedSubject}
-                      onChange={(e) => setSelectedSubject(e.target.value)}
-                      className="bg-transparent text-sm font-black text-gray-900 focus:outline-none cursor-pointer pr-4"
-                    >
-                      <option>Integrated Science</option>
-                      <option>Elective Physics</option>
-                      <option>Elective Chemistry</option>
-                      <option>Elective Biology</option>
-                    </select>
-                  </div> */}
-
-                  {/* Year Selector */}
-                  {/* <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-gray-200 shadow-sm">
-                    <Calendar size={16} className="text-emerald-700" />
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      className="bg-transparent text-sm font-black text-gray-900 focus:outline-none cursor-pointer pr-4"
-                    >
-                      <option>2024/2025</option>
-                      <option>2023/2024</option>
-                      <option>2022/2023</option>
-                    </select>
-                  </div> */}
-
                   <div className="flex flex-wrap gap-4 items-center">
                     <div className="flex-1 min-w-[300px] relative h-12">
                       <Search
