@@ -13,6 +13,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
+import { BookOpen, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useRole } from '../context/RoleContext';
 import api from '../lib/api';
@@ -79,6 +80,15 @@ export function AdminHome() {
   const [activeYear, setActiveYear] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
+  //analytics filter states
+  const [filteredPerformance, setFilteredPerformance] = React.useState<any>(null);
+const [isLoadingFiltered, setIsLoadingFiltered] = React.useState(false);
+const [classes, setClasses] = React.useState<any[]>([]);
+const [departments, setDepartments] = React.useState<any[]>([]);
+const [typeFilter, setTypeFilter] = React.useState<'ALL' | 'CORE' | 'ELECTIVE'>('ALL');
+const [classFilter, setClassFilter] = React.useState<string>('');
+const [departmentFilter, setDepartmentFilter] = React.useState<string>('');
+
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -121,6 +131,51 @@ export function AdminHome() {
     else if (action === 'Broadcast Pulse') setActiveAction('broadcast');
     setFabOpen(false);
   };
+
+  //use effect for filter analytics
+  React.useEffect(() => {
+  async function loadDashboard() {
+    setIsLoading(true);
+    try {
+      const [pulseRes, healthRes, yearRes, classesRes, deptRes] = await Promise.all([
+        api.get('/comms/analytics/pulse'),
+        api.get('/archive/health'),
+        api.get('/academic/years/active'),
+        api.get('/academic/classes'),
+        api.get('/academic/departments'),
+      ]);
+      setPulse(pulseRes.data);
+      setHealth(healthRes.data);
+      setActiveYear(yearRes.data);
+      setClasses(classesRes.data);
+      setDepartments(deptRes.data);
+    } catch (err) {
+      console.error('Failed to load admin dashboard', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  loadDashboard();
+}, []);
+
+  //fetc function for analytics
+  const fetchFilteredPerformance = React.useCallback(async () => {
+  setIsLoadingFiltered(true);
+  try {
+    const params: any = {};
+    if (classFilter) params.classId = classFilter;
+    if (departmentFilter) params.departmentId = departmentFilter;
+    if (typeFilter !== 'ALL') params.subjectType = typeFilter;
+
+const res = await api.get('/grading/performance-filtered', { params });    setFilteredPerformance(res.data);
+  } catch (err) {
+    console.error('Failed to load filtered performance', err);
+  } finally {
+    setIsLoadingFiltered(false);
+  }
+}, [classFilter, departmentFilter, typeFilter]);
+
+React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance]);
 
   // ─── Derived stats ──────────────────────────────────────────────────────────
   const totalStudents = health?.counts.activeStudents ?? 0;
@@ -265,73 +320,176 @@ export function AdminHome() {
 
              {/* Performance Chart */}
             <section className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8">
-                <Radio className="text-slate-100" size={100} />
-              </div>
-              <div className="flex items-center justify-between mb-8 relative">
-                <div>
-                  <h3 className="text-[14px] font-black text-slate-900 uppercase tracking-[0.25em]">
-                    Subject Performance Heatmap
-                  </h3>
-                  <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-widest">
-                    Average scores across all subjects
-                  </p>
-                </div>
-                {isLoading && <Loader2 size={20} className="animate-spin text-slate-300" />}
-              </div>
+  <div className="absolute top-0 right-0 p-8">
+    <Radio className="text-slate-100" size={100} />
+  </div>
 
-              {performanceData.length === 0 && !isLoading ? (
-                <div className="h-64 flex items-center justify-center">
-                  <div className="text-center">
-                    <TrendingUp size={40} className="text-slate-200 mx-auto mb-3" />
-                    <p className="text-sm font-bold text-slate-400">No grade data yet</p>
-                    <p className="text-xs text-slate-300 mt-1">Enter grades to see performance analytics</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={performanceData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} domain={[0, 100]} />
-                        <Tooltip
-                          cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              return (
-                                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xl">
-                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{payload[0].payload.name}</p>
-                                  <p className="text-xl font-black text-slate-900">{Number(payload[0].value).toFixed(1)}%</p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Bar dataKey="score" radius={[12, 12, 4, 4]} barSize={50}>
-                          {performanceData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.85} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mt-6 pt-6 border-t border-slate-50">
-                    {performanceData.map((dept, i) => (
-                      <div key={i} className="space-y-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">{dept.name}</p>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-lg font-black text-slate-900 tabular-nums">{dept.score.toFixed(1)}%</span>
-                          {dept.score > 75 && <ArrowUpRight size={12} className="text-emerald-500" />}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </section>
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative">
+    <div>
+      <h3 className="text-[14px] font-black text-slate-900 uppercase tracking-[0.25em]">
+        Subject Performance Heatmap
+      </h3>
+      <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-widest">
+        Filter by class, department, or subject type
+      </p>
+    </div>
+    {isLoadingFiltered && <Loader2 size={20} className="animate-spin text-slate-300" />}
+  </div>
+
+  {/* Filters */}
+  <div className="flex flex-wrap items-center gap-3 mb-8 relative">
+    {/* Type segmented control */}
+    <div className="flex bg-slate-100 p-1 rounded-xl">
+      {[
+        { id: 'ALL', label: 'All' },
+        { id: 'CORE', label: 'Core' },
+        { id: 'ELECTIVE', label: 'Elective' },
+      ].map(t => (
+        <button
+          key={t.id}
+          onClick={() => setTypeFilter(t.id as any)}
+          className={cn(
+            'px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all',
+            typeFilter === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+          )}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+
+    <select
+      value={classFilter}
+      onChange={e => setClassFilter(e.target.value)}
+      className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest outline-none"
+    >
+      <option value="">All Classes</option>
+      {classes.map(c => (
+        <option key={c.id} value={c.id}>{c.level.replace('FORM_', 'Form ')} {c.name}</option>
+      ))}
+    </select>
+
+    <select
+      value={departmentFilter}
+      onChange={e => setDepartmentFilter(e.target.value)}
+      className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest outline-none"
+    >
+      <option value="">All Departments</option>
+      {departments.map(d => (
+        <option key={d.id} value={d.id}>{d.name}</option>
+      ))}
+    </select>
+
+    {(classFilter || departmentFilter || typeFilter !== 'ALL') && (
+      <button
+        onClick={() => { setClassFilter(''); setDepartmentFilter(''); setTypeFilter('ALL'); }}
+        className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-700 transition-all"
+      >
+        Clear Filters
+      </button>
+    )}
+  </div>
+
+  {/* Core vs Elective summary cards (only show when type filter is ALL) */}
+  {typeFilter === 'ALL' && filteredPerformance?.summary && (
+    <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex items-center gap-4">
+        <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center">
+          <ShieldCheck size={18} />
+        </div>
+        <div>
+          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Core Average</p>
+          <p className="text-2xl font-black text-emerald-900">
+            {filteredPerformance.summary.coreAverage ? `${filteredPerformance.summary.coreAverage}%` : '—'}
+          </p>
+          <p className="text-[10px] font-bold text-emerald-500">{filteredPerformance.summary.coreSubjectCount} subjects</p>
+        </div>
+      </div>
+      <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex items-center gap-4">
+        <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center">
+          <Sparkles size={18} />
+        </div>
+        <div>
+          <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Elective Average</p>
+          <p className="text-2xl font-black text-indigo-900">
+            {filteredPerformance.summary.electiveAverage ? `${filteredPerformance.summary.electiveAverage}%` : '—'}
+          </p>
+          <p className="text-[10px] font-bold text-indigo-500">{filteredPerformance.summary.electiveSubjectCount} subjects</p>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Chart */}
+  {!filteredPerformance?.subjects?.length && !isLoadingFiltered ? (
+    <div className="h-64 flex items-center justify-center">
+      <div className="text-center">
+        <TrendingUp size={40} className="text-slate-200 mx-auto mb-3" />
+        <p className="text-sm font-bold text-slate-400">No grade data for this filter</p>
+        <p className="text-xs text-slate-300 mt-1">Try a different class or department</p>
+      </div>
+    </div>
+  ) : (
+    <>
+      <div className="h-[300px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={filteredPerformance?.subjects?.slice(0, 10) ?? []}
+            margin={{ top: 20, right: 30, left: 0, bottom: 40 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <XAxis
+              dataKey="subjectName"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 900 }}
+              angle={-25}
+              textAnchor="end"
+              height={60}
+            />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} domain={[0, 100]} />
+            <Tooltip
+              cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const d = payload[0].payload;
+                  return (
+                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xl">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{d.subjectName}</p>
+                      <p className="text-xl font-black text-slate-900">{Number(d.averageScore).toFixed(1)}%</p>
+                      <p className="text-[10px] font-bold text-slate-400 mt-1">
+                        {d.type} {d.departmentName ? `· ${d.departmentName}` : ''} · {d.studentCount} entries
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Bar dataKey="averageScore" radius={[12, 12, 4, 4]} barSize={36}>
+              {(filteredPerformance?.subjects?.slice(0, 10) ?? []).map((entry: any, index: number) => (
+                <Cell key={`cell-${index}`} fill={entry.type === 'CORE' ? '#059669' : '#6366f1'} fillOpacity={0.85} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-6 mt-6 pt-6 border-t border-slate-50">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-emerald-600" />
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Core Subjects</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-indigo-600" />
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Elective Subjects</span>
+        </div>
+        <span className="text-[10px] font-bold text-slate-300 ml-auto">Showing top 10 by average score</span>
+      </div>
+    </>
+  )}
+</section>
 
             {/* Class Enrollment Feed */}
             <section className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden">
