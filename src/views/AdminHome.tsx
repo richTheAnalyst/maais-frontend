@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, GraduationCap, TrendingUp, AlertCircle,
-  CheckCircle2, Clock, ShieldAlert, Radio, FileCheck,
+  CheckCircle2, Clock, ShieldAlert, ShieldCheck, Radio, FileCheck,
   LifeBuoy, StickyNote, Zap, Lock, ArrowUpRight,
   MoreVertical, ThumbsUp, ThumbsDown, ExternalLink,
   Calendar, User, UserPlus, ChevronRight, X, Plus,
