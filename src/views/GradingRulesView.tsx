@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Users,
   FileCheck,
+  GraduationCap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -86,7 +87,11 @@ export const GradingRulesView: React.FC = () => {
   const [isBulkLocking, setIsBulkLocking] = useState(false);
   const [isBulkUnlocking, setIsBulkUnlocking] = useState(false);
   const [lockingStudentId, setLockingStudentId] = useState<string | null>(null);
-
+const [activeYear, setActiveYear] = useState<any>(null);
+const [readiness, setReadiness] = useState<any>(null);
+const [isPromoting, setIsPromoting] = useState(false);
+const [promotionResult, setPromotionResult] = useState<any>(null);
+const [showPromotionConfirm, setShowPromotionConfirm] = useState(false);
   const showToast = (msg: string) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(null), 3000);
@@ -142,6 +147,58 @@ export const GradingRulesView: React.FC = () => {
     }
     loadSummary();
   }, [selectedClassId, activeTerm]);
+
+  //----to pull active year and promotion readiness
+  const fetchData = useCallback(async () => {
+  setIsLoading(true);
+  try {
+    const [boundariesRes, yearRes, classesRes] = await Promise.all([
+      api.get('/grading/boundaries'),
+      api.get('/academic/years/active'),
+      api.get('/academic/classes'),
+    ]);
+
+    setBoundaries(boundariesRes.data);
+    setClasses(classesRes.data);
+    setActiveYear(yearRes.data);
+
+    const term = yearRes.data?.terms?.find((t: any) => t.isActive);
+    if (term) {
+      setActiveTerm({ ...term, academicYear: { label: yearRes.data.label } });
+    }
+
+    if (classesRes.data.length > 0) {
+      setSelectedClassId(classesRes.data[0].id);
+    }
+
+    // Check if all terms are locked → promotion readiness
+    if (yearRes.data?.id) {
+      try {
+        const readinessRes = await api.get(`/archive/promotion/readiness/${yearRes.data.id}`);
+        setReadiness(readinessRes.data);
+      } catch {}
+    }
+  } catch (err) {
+    console.error('Failed to load grading rules', err);
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
+//promotion handler
+const handleExecutePromotion = async () => {
+  if (!activeYear) return;
+  setIsPromoting(true);
+  try {
+    const res = await api.post('/archive/promote', { academicYearId: activeYear.id });
+    setPromotionResult(res.data);
+    setShowPromotionConfirm(false);
+    await fetchData();
+  } catch (err: any) {
+    alert(err.response?.data?.message || 'Promotion failed. Ensure all terms are locked first.');
+  } finally {
+    setIsPromoting(false);
+  }
+};
 
   // ─── Lock/unlock a single student's grades ─────────────────────────────────
   const toggleStudentLock = async (student: ClassSummaryItem) => {
@@ -433,6 +490,65 @@ export const GradingRulesView: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+      {/* Promotion confirmation */}
+<AnimatePresence>
+  {showPromotionConfirm && (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={() => setShowPromotionConfirm(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
+      <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="relative w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-2xl">
+        <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-6">
+          <GraduationCap size={28} />
+        </div>
+        <h3 className="text-2xl font-black italic font-display text-slate-900 mb-3">Confirm Year-End Promotion</h3>
+        <p className="text-sm text-slate-500 mb-8">
+          This will promote <strong>{readiness?.totalActiveStudents}</strong> students. Form 3 students will be archived to the Alumni Vault. This is irreversible.
+        </p>
+        <div className="flex gap-4">
+          <button onClick={() => setShowPromotionConfirm(false)} className="flex-1 py-4 bg-slate-50 rounded-2xl text-xs font-black uppercase tracking-widest">Abort</button>
+          <button onClick={handleExecutePromotion} disabled={isPromoting} className="flex-1 py-4 bg-amber-500 text-slate-900 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60">
+            {isPromoting ? <Loader2 size={14} className="animate-spin" /> : <GraduationCap size={14} />}
+            Execute
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
+
+{/* Promotion success result */}
+<AnimatePresence>
+  {promotionResult && (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setPromotionResult(null)} />
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-lg bg-white rounded-[3rem] p-12 shadow-2xl text-center">
+        <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+          <CheckCircle2 size={40} />
+        </div>
+        <h3 className="text-2xl font-black italic font-display text-slate-900 mb-2">Promotion Complete</h3>
+        <p className="text-slate-400 text-sm mb-8">{promotionResult.academicYear}</p>
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-slate-50 p-4 rounded-2xl">
+            <p className="text-2xl font-black text-slate-900">{promotionResult.totalProcessed}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Processed</p>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-2xl">
+            <p className="text-2xl font-black text-blue-600">{promotionResult.promoted}</p>
+            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mt-1">Promoted</p>
+          </div>
+          <div className="bg-emerald-50 p-4 rounded-2xl">
+            <p className="text-2xl font-black text-emerald-600">{promotionResult.graduated}</p>
+            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">Graduated</p>
+          </div>
+        </div>
+        <button onClick={() => setPromotionResult(null)} className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest">
+          Close
+        </button>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
 
       <div className="max-w-7xl mx-auto space-y-10 pb-20">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -850,6 +966,35 @@ export const GradingRulesView: React.FC = () => {
                         Database is currently Read-Only for this term
                       </p>
                     )}
+
+{/* Year-End Promotion — only visible once this is the final term and it's locked */}
+{activeTerm?.isLocked && activeTerm.termNumber === 'TERM_3' && (
+  <div className="mt-10 pt-10 border-t border-white/10">
+    <div className="flex items-center gap-2 mb-4">
+      <GraduationCap size={18} className="text-amber-400" />
+      <h4 className="text-sm font-black text-white uppercase tracking-widest">Year-End Promotion</h4>
+    </div>
+    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-6">
+      Final term is locked. You may now promote all students to their next form.
+    </p>
+
+    {readiness && (
+      <div className="bg-white/5 p-4 rounded-2xl border border-white/10 mb-6">
+        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Students Ready</p>
+        <p className="text-lg font-black text-white">{readiness.totalActiveStudents}</p>
+      </div>
+    )}
+
+    <button
+      onClick={() => setShowPromotionConfirm(true)}
+      disabled={!readiness?.isReady}
+      className="w-full py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-widest transition-all shadow-2xl flex items-center justify-center gap-3 bg-amber-500 text-slate-900 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      <GraduationCap size={16} />
+      Execute Year-End Promotion
+    </button>
+  </div>
+)}
                   </>
                 ) : (
                   <p className="text-sm font-bold text-slate-400">
