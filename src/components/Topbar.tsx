@@ -128,8 +128,8 @@ export function Topbar() {
           <div className="w-8 h-8 bg-[#064E3B] rounded-lg flex items-center justify-center text-white font-bold text-sm font-display italic shadow-lg shadow-emerald-950/20">
             M
           </div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#064E3B] font-display italic">MAAIS</p>
-        </div>
+{/*           <p className="text-xs font-black uppercase tracking-[0.2em] text-[#064E3B] font-display italic">MAAIS</p>
+ */}        </div>
       </div>
 
       <div className="flex items-center gap-3 lg:gap-6">
@@ -294,7 +294,7 @@ export function Topbar() {
                     </div>
                   </button>
 
-                  <button
+                 {/*  <button
                     onClick={() => { setProfileOpen(false); navigate('/support'); }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-all text-left group"
                   >
@@ -305,7 +305,7 @@ export function Topbar() {
                       <p className="text-xs font-bold text-gray-900">Support</p>
                       <p className="text-[10px] text-gray-400">ICT help desk</p>
                     </div>
-                  </button>
+                  </button> */}
                 </div>
 
                 {/* Logout */}

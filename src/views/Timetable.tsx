@@ -2,17 +2,15 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, Clock, MapPin, ChevronRight,
-  LayoutGrid, List, Timer, ShieldAlert,
-  AlertTriangle, Plus, X, Loader2,
-  RefreshCw, BookOpen, GraduationCap, ArrowRight,
-  Settings2
+  LayoutGrid, List, Timer, AlertTriangle,
+  Plus, X, Loader2, RefreshCw, BookOpen,
+  GraduationCap, ArrowRight, Settings2, Edit3,
+  CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { useRole } from '../context/RoleContext';
 import api from '../lib/api';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY';
 
@@ -39,14 +37,12 @@ interface SchoolSettings {
   departmentColorsEnabled: boolean;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const DAYS: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 const DAY_LABELS: Record<DayOfWeek, string> = {
   MONDAY: 'Monday', TUESDAY: 'Tuesday', WEDNESDAY: 'Wednesday',
   THURSDAY: 'Thursday', FRIDAY: 'Friday',
 };
-const HOURS = Array.from({ length: 11 }, (_, i) => i + 7); // 7am–5pm
+const HOURS = Array.from({ length: 11 }, (_, i) => i + 7);
 
 const TYPE_COLORS: Record<string, string> = {
   Science: 'bg-emerald-50 border-emerald-200 text-emerald-800',
@@ -55,39 +51,46 @@ const TYPE_COLORS: Record<string, string> = {
   default: 'bg-white border-slate-200 text-slate-800',
 };
 
-const NEUTRAL_COLOR = 'bg-white border-slate-200 text-slate-800';
+// ─── Entry Form (shared by Add and Edit) ─────────────────────────────────────
 
-// ─── Add Entry Modal ──────────────────────────────────────────────────────────
-
-const AddEntryModal: React.FC<{
+const EntryForm: React.FC<{
+  initial: {
+    classId: string;
+    subjectId: string;
+    teacherId: string;
+    dayOfWeek: DayOfWeek;
+    startTime: string;
+    endTime: string;
+    room: string;
+  };
   classes: ClassSection[];
   subjects: Subject[];
   teachers: StaffMember[];
+  onSubmit: (form: any) => Promise<void>;
   onClose: () => void;
-  onSuccess: () => void;
-}> = ({ classes, subjects, teachers, onClose, onSuccess }) => {
-  const [form, setForm] = React.useState({
-    classId: classes[0]?.id ?? '',
-    subjectId: subjects[0]?.id ?? '',
-    teacherId: teachers[0]?.id ?? '',
-    dayOfWeek: 'MONDAY' as DayOfWeek,
-    startTime: '08:00',
-    endTime: '09:30',
-    room: '',
-  });
+  title: string;
+  submitLabel: string;
+}> = ({ initial, classes, subjects, teachers, onSubmit, onClose, title, submitLabel }) => {
+  const [form, setForm] = React.useState(initial);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.classId || !form.subjectId || !form.teacherId) {
+      setError('Class, subject, and teacher are required');
+      return;
+    }
+    if (form.startTime >= form.endTime) {
+      setError('End time must be after start time');
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      await api.post('/timetable', form);
-      onSuccess();
-      onClose();
+      await onSubmit(form);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create entry');
+      setError(err.response?.data?.message || err.message || 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
@@ -102,13 +105,8 @@ const AddEntryModal: React.FC<{
         className="relative w-full max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
       >
         <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
-          <div>
-            <h3 className="text-lg font-black text-slate-900">Add Timetable Entry</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Schedule a class session</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl">
-            <X size={20} />
-          </button>
+          <h3 className="text-lg font-black text-slate-900">{title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -170,8 +168,8 @@ const AddEntryModal: React.FC<{
           <button onClick={onClose} className="flex-1 py-3 bg-slate-50 rounded-xl text-sm font-black uppercase tracking-widest">Cancel</button>
           <button onClick={handleSubmit as any} disabled={isLoading}
             className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60">
-            {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-            Add Entry
+            {isLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+            {submitLabel}
           </button>
         </div>
       </motion.div>
@@ -189,56 +187,35 @@ const SettingsModal: React.FC<{
 }> = ({ settings, onClose, onToggle, isSaving }) => (
   <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
-    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8">
+    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+      className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-black text-slate-900">Timetable Settings</h3>
-        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl">
-          <X size={20} />
-        </button>
+        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl"><X size={20} /></button>
       </div>
-
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-          <div className="pr-4">
-            <p className="text-sm font-bold text-slate-900">Clash Detection</p>
-            <p className="text-xs text-slate-400 mt-0.5">Highlight overlapping teacher schedules</p>
+        {[
+          { key: 'clashDetectionEnabled' as const, label: 'Clash Detection', sub: 'Highlight overlapping teacher schedules' },
+          { key: 'departmentColorsEnabled' as const, label: 'Department Colors', sub: 'Color-code sessions by department' },
+        ].map(item => (
+          <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="pr-4">
+              <p className="text-sm font-bold text-slate-900">{item.label}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{item.sub}</p>
+            </div>
+            <button
+              onClick={() => onToggle(item.key)}
+              disabled={isSaving}
+              className={cn('w-12 h-7 rounded-full relative transition-colors shrink-0', settings[item.key] ? 'bg-emerald-600' : 'bg-slate-200')}
+            >
+              <motion.div
+                className="w-5 h-5 bg-white rounded-full absolute top-1 shadow-sm"
+                animate={{ left: settings[item.key] ? '26px' : '4px' }}
+              />
+            </button>
           </div>
-          <button
-            onClick={() => onToggle('clashDetectionEnabled')}
-            disabled={isSaving}
-            className={cn(
-              'w-12 h-7 rounded-full relative transition-colors shrink-0',
-              settings.clashDetectionEnabled ? 'bg-emerald-600' : 'bg-slate-200'
-            )}
-          >
-            <motion.div
-              className="w-5 h-5 bg-white rounded-full absolute top-1 shadow-sm"
-              animate={{ left: settings.clashDetectionEnabled ? '26px' : '4px' }}
-            />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-          <div className="pr-4">
-            <p className="text-sm font-bold text-slate-900">Department Colors</p>
-            <p className="text-xs text-slate-400 mt-0.5">Color-code sessions by department</p>
-          </div>
-          <button
-            onClick={() => onToggle('departmentColorsEnabled')}
-            disabled={isSaving}
-            className={cn(
-              'w-12 h-7 rounded-full relative transition-colors shrink-0',
-              settings.departmentColorsEnabled ? 'bg-emerald-600' : 'bg-slate-200'
-            )}
-          >
-            <motion.div
-              className="w-5 h-5 bg-white rounded-full absolute top-1 shadow-sm"
-              animate={{ left: settings.departmentColorsEnabled ? '26px' : '4px' }}
-            />
-          </button>
-        </div>
+        ))}
       </div>
-
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6 text-center">
         Applies school-wide for all users
       </p>
@@ -259,30 +236,36 @@ export function Timetable() {
   const [settings, setSettings] = React.useState<SchoolSettings | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [clashes, setClashes] = React.useState<any[]>([]);
+  const [toast, setToast] = React.useState<string | null>(null);
 
   const [view, setView] = React.useState<'daily' | 'weekly'>('weekly');
   const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>('MONDAY');
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [showAddModal, setShowAddModal] = React.useState(false);
+  const [editingEntry, setEditingEntry] = React.useState<TimetableEntry | null>(null);
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
   const [selectedEntry, setSelectedEntry] = React.useState<TimetableEntry | null>(null);
 
-  // Live clock
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch data
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      let entriesUrl = '/timetable';
-      if (user?.staffProfileId) {
-        entriesUrl = `/timetable/teacher/${user.staffProfileId}`;
-      }
+      // Teachers see only their schedule; everyone else sees all
+      const isTeacher = user?.role === 'TEACHER';
+      const entriesUrl = isTeacher && user?.staffProfileId
+        ? `/timetable/teacher/${user.staffProfileId}`
+        : '/timetable';
 
       const [entriesRes, classesRes, subjectsRes, staffRes, settingsRes] = await Promise.all([
         api.get(entriesUrl),
@@ -295,18 +278,42 @@ export function Timetable() {
       setEntries(entriesRes.data);
       setClasses(classesRes.data);
       setSubjects(subjectsRes.data);
+      setSettings(settingsRes.data);
+
+      // Map staffProfile id correctly for timetable teacher field
       setTeachers(staffRes.data.map((s: any) => ({
-        id: s.id,
+        id: s.id,                 // staffProfile.id — what timetable.teacherId references
         firstName: s.firstName,
         lastName: s.lastName,
         staffId: s.staffId,
       })));
-      setSettings(settingsRes.data);
 
-      if (user?.staffProfileId && settingsRes.data.clashDetectionEnabled) {
+      // Clash detection — use staffProfileId for teachers, fetch all for admins/HODs
+      if (settingsRes.data.clashDetectionEnabled) {
         try {
-          const clashRes = await api.get(`/timetable/clashes/${user.staffProfileId}`);
-          setClashes(clashRes.data);
+          if (user?.staffProfileId) {
+            const clashRes = await api.get(`/timetable/clashes/${user.staffProfileId}`);
+            setClashes(clashRes.data);
+          } else {
+            // Admin: aggregate clashes across all teachers
+            const allClashes: any[] = [];
+            const uniqueTeacherIds = [...new Set(entriesRes.data.map((e: any) => e.teacherId))];
+            await Promise.allSettled(
+              uniqueTeacherIds.map(async (tid: any) => {
+                const res = await api.get(`/timetable/clashes/${tid}`);
+                allClashes.push(...res.data);
+              })
+            );
+            // Deduplicate by pair
+            const seen = new Set<string>();
+            const deduped = allClashes.filter(c => {
+              const key = [c.a.id, c.b.id].sort().join('|');
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+            setClashes(deduped);
+          }
         } catch {
           setClashes([]);
         }
@@ -322,23 +329,15 @@ export function Timetable() {
 
   React.useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ─── Settings toggle ──────────────────────────────────────────────────────
   const handleToggleSetting = async (key: 'clashDetectionEnabled' | 'departmentColorsEnabled') => {
     if (!settings) return;
     setIsSavingSettings(true);
     try {
       const res = await api.patch('/settings', { [key]: !settings[key] });
       setSettings(res.data);
-
       if (key === 'clashDetectionEnabled') {
-        if (!res.data.clashDetectionEnabled) {
-          setClashes([]);
-        } else if (user?.staffProfileId) {
-          try {
-            const clashRes = await api.get(`/timetable/clashes/${user.staffProfileId}`);
-            setClashes(clashRes.data);
-          } catch {}
-        }
+        if (!res.data.clashDetectionEnabled) setClashes([]);
+        else await fetchData();
       }
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to update settings');
@@ -347,14 +346,11 @@ export function Timetable() {
     }
   };
 
-  // Helpers
   const formatTime = (d: Date) => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
   const getTimePercent = (time: string) => {
     const [h, m] = time.split(':').map(Number);
     return ((h - 7) * 60 + m) / (11 * 60) * 100;
   };
-
   const getCurrentDay = (): DayOfWeek | null => {
     const idx = currentTime.getDay();
     return idx >= 1 && idx <= 5 ? DAYS[idx - 1] : null;
@@ -373,14 +369,48 @@ export function Timetable() {
   const canManage = user?.role === 'ADMIN' || user?.role === 'HOD';
 
   const entryColor = (entry: TimetableEntry) => {
-    if (!settings?.departmentColorsEnabled) return NEUTRAL_COLOR;
+    if (!settings?.departmentColorsEnabled) return 'bg-white border-slate-200 text-slate-800';
     const dept = entry.subject?.department?.name ?? 'default';
     return TYPE_COLORS[dept] ?? TYPE_COLORS.default;
   };
 
-  const isEntryClashing = (entryId: string) => {
-    if (!settings?.clashDetectionEnabled) return false;
-    return clashes.some(c => c.a.id === entryId || c.b.id === entryId);
+  const isEntryClashing = (entryId: string) =>
+    settings?.clashDetectionEnabled
+      ? clashes.some(c => c.a.id === entryId || c.b.id === entryId)
+      : false;
+
+  const handleAdd = async (form: any) => {
+    await api.post('/timetable', form);
+    showToast('Session added successfully');
+    setShowAddModal(false);
+    await fetchData();
+  };
+
+  const handleEdit = async (form: any) => {
+    if (!editingEntry) return;
+    await api.put(`/timetable/${editingEntry.id}`, form);
+    showToast('Session updated successfully');
+    setEditingEntry(null);
+    setSelectedEntry(null);
+    await fetchData();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this timetable entry?')) return;
+    await api.delete(`/timetable/${id}`);
+    showToast('Session deleted');
+    setSelectedEntry(null);
+    await fetchData();
+  };
+
+  const emptyForm = {
+    classId: classes[0]?.id ?? '',
+    subjectId: subjects[0]?.id ?? '',
+    teacherId: teachers[0]?.id ?? '',
+    dayOfWeek: 'MONDAY' as DayOfWeek,
+    startTime: '08:00',
+    endTime: '09:30',
+    room: '',
   };
 
   if (isLoading) {
@@ -397,6 +427,19 @@ export function Timetable() {
   return (
     <div className="flex-1 flex flex-col bg-[#F0F4F2] overflow-hidden">
 
+      {/* Toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
+            className="fixed top-6 right-6 z-[300] bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3"
+          >
+            <CheckCircle2 size={16} />
+            <span className="text-sm font-bold">{toast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="px-8 pt-8 pb-6 bg-white border-b border-gray-200 shadow-sm shrink-0">
         <div className="flex items-center justify-between mb-6">
@@ -410,11 +453,10 @@ export function Timetable() {
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   {entries.length} sessions
-                  {settings?.clashDetectionEnabled && (
-                    clashes.length > 0
-                      ? ` · ${clashes.length} clash${clashes.length > 1 ? 'es' : ''}`
-                      : ' · No clashes'
+                  {settings?.clashDetectionEnabled && clashes.length > 0 && (
+                    <span className="text-rose-500"> · {clashes.length} clash{clashes.length > 1 ? 'es' : ''}</span>
                   )}
+                  {settings?.clashDetectionEnabled && clashes.length === 0 && ' · No clashes'}
                 </p>
               </div>
             </div>
@@ -425,16 +467,19 @@ export function Timetable() {
               <RefreshCw size={16} />
             </button>
             <div className="flex bg-gray-100 p-1 rounded-xl">
-              <button onClick={() => setView('daily')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all', view === 'daily' ? 'bg-white text-emerald-800 shadow-sm' : 'text-gray-500')}>
-                <List size={15} /> Daily
-              </button>
-              <button onClick={() => setView('weekly')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all', view === 'weekly' ? 'bg-white text-emerald-800 shadow-sm' : 'text-gray-500')}>
-                <LayoutGrid size={15} /> Weekly
-              </button>
+              {[
+                { id: 'daily', icon: List, label: 'Daily' },
+                { id: 'weekly', icon: LayoutGrid, label: 'Weekly' },
+              ].map(v => (
+                <button key={v.id} onClick={() => setView(v.id as any)}
+                  className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all', view === v.id ? 'bg-white text-emerald-800 shadow-sm' : 'text-gray-500')}>
+                  <v.icon size={15} /> {v.label}
+                </button>
+              ))}
             </div>
             {canManage && (
               <>
-                <button onClick={() => setShowSettingsModal(true)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-slate-700 transition-all">
+                <button onClick={() => setShowSettingsModal(true)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-slate-700 transition-all" title="Timetable settings">
                   <Settings2 size={16} />
                 </button>
                 <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-700/20">
@@ -481,9 +526,7 @@ export function Timetable() {
                 <h3 className="text-sm font-black text-gray-900 leading-tight">
                   {nextEntry ? `${nextEntry.subject.name} · ${nextEntry.classSection.name}` : 'End of Day'}
                 </h3>
-                {nextEntry && (
-                  <p className="text-[10px] font-bold text-gray-500 mt-0.5">Starts at {nextEntry.startTime}</p>
-                )}
+                {nextEntry && <p className="text-[10px] font-bold text-gray-500 mt-0.5">Starts at {nextEntry.startTime}</p>}
               </div>
             </div>
             {settings?.clashDetectionEnabled && clashes.length > 0 && (
@@ -503,7 +546,6 @@ export function Timetable() {
         {view === 'weekly' && (
           <div className="h-full overflow-auto p-6">
             <div className="min-w-[900px]">
-              {/* Day headers */}
               <div className="flex mb-2 ml-16">
                 {DAYS.map(day => (
                   <div key={day} className={cn('flex-1 text-center py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all', day === currentDay ? 'bg-emerald-100 text-emerald-800' : 'text-slate-400')}>
@@ -512,9 +554,7 @@ export function Timetable() {
                 ))}
               </div>
 
-              {/* Grid */}
               <div className="flex" style={{ height: `${HOURS.length * 64}px` }}>
-                {/* Time axis */}
                 <div className="w-16 shrink-0 relative">
                   {HOURS.map(h => (
                     <div key={h} className="absolute left-0 right-0 flex items-start" style={{ top: `${((h - 7) / HOURS.length) * 100}%`, height: `${100 / HOURS.length}%` }}>
@@ -523,17 +563,14 @@ export function Timetable() {
                   ))}
                 </div>
 
-                {/* Columns */}
                 {DAYS.map(day => {
                   const dayEntries = entries.filter(e => e.dayOfWeek === day);
                   return (
                     <div key={day} className={cn('flex-1 relative border-l border-slate-100', day === currentDay && 'bg-emerald-50/30')}>
-                      {/* Hour lines */}
                       {HOURS.map(h => (
                         <div key={h} className="absolute left-0 right-0 border-t border-slate-100" style={{ top: `${((h - 7) / HOURS.length) * 100}%` }} />
                       ))}
 
-                      {/* Current time line */}
                       {day === currentDay && (
                         <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{ top: `${getTimePercent(nowStr)}%` }}>
                           <div className="w-2 h-2 bg-red-500 rounded-full -ml-1 shrink-0" />
@@ -541,7 +578,6 @@ export function Timetable() {
                         </div>
                       )}
 
-                      {/* Entries */}
                       {dayEntries.map(entry => {
                         const top = getTimePercent(entry.startTime);
                         const height = getTimePercent(entry.endTime) - top;
@@ -575,26 +611,19 @@ export function Timetable() {
                                 <MapPin size={7} /> {entry.room}
                               </p>
                             )}
-                            {isHovered && (
+                            {isHovered && canManage && (
                               <div className="mt-2 pt-2 border-t border-current/20">
                                 <p className="text-[9px] font-black opacity-60">{entry.startTime} – {entry.endTime}</p>
                                 <p className="text-[9px] font-black opacity-60">{entry.teacher.firstName} {entry.teacher.lastName}</p>
                                 <div className="flex gap-1 mt-2">
-                                  <button onClick={(e) => { e.stopPropagation(); navigate('/grading'); }}
-                                    className="flex-1 py-1 bg-slate-900 text-white text-[9px] font-black rounded-lg">
-                                    Open Sheet
+                                  <button onClick={(e) => { e.stopPropagation(); setEditingEntry(entry); }}
+                                    className="flex-1 py-1 bg-slate-900 text-white text-[9px] font-black rounded-lg flex items-center justify-center gap-1">
+                                    <Edit3 size={9} /> Edit
                                   </button>
-                                  {canManage && (
-                                    <button onClick={async (e) => {
-                                      e.stopPropagation();
-                                      if (confirm('Delete this entry?')) {
-                                        await api.delete(`/timetable/${entry.id}`);
-                                        fetchData();
-                                      }
-                                    }} className="px-2 py-1 bg-rose-100 text-rose-600 text-[9px] font-black rounded-lg">
-                                      Del
-                                    </button>
-                                  )}
+                                  <button onClick={async (e) => { e.stopPropagation(); await handleDelete(entry.id); }}
+                                    className="px-2 py-1 bg-rose-100 text-rose-600 text-[9px] font-black rounded-lg">
+                                    Del
+                                  </button>
                                 </div>
                               </div>
                             )}
@@ -612,15 +641,13 @@ export function Timetable() {
         {/* ── DAILY VIEW ── */}
         {view === 'daily' && (
           <div className="h-full flex flex-col overflow-hidden">
-            {/* Day tabs */}
             <div className="flex gap-2 px-8 pt-6 pb-4 shrink-0 overflow-x-auto">
               {DAYS.map(day => (
                 <button key={day} onClick={() => setSelectedDay(day)}
                   className={cn('px-5 py-2.5 rounded-2xl text-sm font-black transition-all whitespace-nowrap flex items-center gap-2',
                     selectedDay === day ? 'bg-emerald-800 text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-100')}>
                   {DAY_LABELS[day]}
-                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-black',
-                    selectedDay === day ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500')}>
+                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-black', selectedDay === day ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500')}>
                     {entries.filter(e => e.dayOfWeek === day).length}
                   </span>
                   {day === currentDay && <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />}
@@ -628,7 +655,6 @@ export function Timetable() {
               ))}
             </div>
 
-            {/* Entry list */}
             <div className="flex-1 overflow-y-auto px-8 pb-8">
               <div className="max-w-3xl space-y-3">
                 {entries
@@ -639,11 +665,7 @@ export function Timetable() {
                     const isClash = isEntryClashing(entry.id);
 
                     return (
-                      <motion.div
-                        key={entry.id}
-                        layout
-                        onMouseEnter={() => setHoveredId(entry.id)}
-                        onMouseLeave={() => setHoveredId(null)}
+                      <motion.div key={entry.id} layout
                         className={cn(
                           'bg-white rounded-2xl border p-5 cursor-pointer transition-all shadow-sm group',
                           isActive ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-gray-200 hover:border-emerald-200',
@@ -652,19 +674,23 @@ export function Timetable() {
                         onClick={() => setSelectedEntry(entry)}
                       >
                         <div className="flex items-center gap-5">
-                          {/* Time */}
                           <div className="w-20 shrink-0 text-center border-r border-gray-100 pr-5">
                             <p className="text-base font-black text-gray-900">{entry.startTime}</p>
                             <p className="text-[9px] font-bold text-gray-400 uppercase">{entry.endTime}</p>
                             {isActive && <div className="mt-1 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse mx-auto" />}
                           </div>
 
-                          {/* Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="text-base font-black text-gray-900 truncate">{entry.subject.name}</h4>
-                              {isActive && <span className="badge-green shrink-0">Live</span>}
-                              {isClash && <span className="badge-red shrink-0 flex items-center gap-1"><AlertTriangle size={10} /> Clash</span>}
+                              {isActive && (
+                                <span className="shrink-0 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-full uppercase">Live</span>
+                              )}
+                              {isClash && (
+                                <span className="shrink-0 px-2 py-0.5 bg-rose-100 text-rose-600 text-[9px] font-black rounded-full uppercase flex items-center gap-1">
+                                  <AlertTriangle size={9} /> Clash
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-3 text-xs font-bold text-gray-500 flex-wrap">
                               <span className="flex items-center gap-1">
@@ -672,9 +698,7 @@ export function Timetable() {
                                 {entry.classSection.level.replace('FORM_', 'Form ')} {entry.classSection.name}
                               </span>
                               {entry.room && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin size={12} /> {entry.room}
-                                </span>
+                                <span className="flex items-center gap-1"><MapPin size={12} /> {entry.room}</span>
                               )}
                               <span className="flex items-center gap-1">
                                 <BookOpen size={12} />
@@ -683,22 +707,22 @@ export function Timetable() {
                             </div>
                           </div>
 
-                          {/* Actions */}
                           <div className="flex items-center gap-2 shrink-0">
                             <button onClick={(e) => { e.stopPropagation(); navigate('/grading'); }}
                               className="px-4 py-2 bg-emerald-800 text-white rounded-xl text-xs font-black hover:bg-emerald-900 transition-all opacity-0 group-hover:opacity-100 flex items-center gap-1.5">
                               Open Sheet <ArrowRight size={12} />
                             </button>
                             {canManage && (
-                              <button onClick={async (e) => {
-                                e.stopPropagation();
-                                if (confirm('Delete this timetable entry?')) {
-                                  await api.delete(`/timetable/${entry.id}`);
-                                  fetchData();
-                                }
-                              }} className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100">
-                                <X size={16} />
-                              </button>
+                              <>
+                                <button onClick={(e) => { e.stopPropagation(); setEditingEntry(entry); }}
+                                  className="p-2 text-slate-300 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all opacity-0 group-hover:opacity-100">
+                                  <Edit3 size={16} />
+                                </button>
+                                <button onClick={async (e) => { e.stopPropagation(); await handleDelete(entry.id); }}
+                                  className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100">
+                                  <X size={16} />
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>
@@ -710,7 +734,7 @@ export function Timetable() {
                   <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200">
                     <Calendar className="mx-auto text-gray-300 mb-4" size={48} />
                     <h3 className="text-lg font-black text-gray-900 mb-1">No Classes Scheduled</h3>
-                    <p className="text-sm font-bold text-gray-400">Enjoy your free period!</p>
+                    <p className="text-sm font-bold text-gray-400">Nothing scheduled for this day</p>
                     {canManage && (
                       <button onClick={() => setShowAddModal(true)} className="mt-4 flex items-center gap-2 px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-bold mx-auto">
                         <Plus size={14} /> Add Session
@@ -726,7 +750,7 @@ export function Timetable() {
 
       {/* Entry Detail Drawer */}
       <AnimatePresence>
-        {selectedEntry && (
+        {selectedEntry && !editingEntry && (
           <div className="fixed inset-0 z-[150] flex justify-end">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedEntry(null)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
@@ -734,7 +758,7 @@ export function Timetable() {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col">
               <div className="p-6 bg-slate-900 text-white shrink-0">
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">
                       {DAY_LABELS[selectedEntry.dayOfWeek]} · {selectedEntry.startTime} – {selectedEntry.endTime}
@@ -746,6 +770,12 @@ export function Timetable() {
                     <X size={20} />
                   </button>
                 </div>
+                {isEntryClashing(selectedEntry.id) && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-rose-500/20 border border-rose-400/30 rounded-xl">
+                    <AlertTriangle size={14} className="text-rose-400" />
+                    <span className="text-[10px] font-black text-rose-300 uppercase tracking-widest">Scheduling Clash Detected</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -770,15 +800,22 @@ export function Timetable() {
                   <ArrowRight size={14} /> Open Grading Sheet
                 </button>
                 {canManage && (
-                  <button onClick={async () => {
-                    if (confirm('Delete this entry?')) {
-                      await api.delete(`/timetable/${selectedEntry.id}`);
-                      setSelectedEntry(null);
-                      fetchData();
-                    }
-                  }} className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all">
-                    <X size={18} />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setEditingEntry(selectedEntry)}
+                      className="p-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all"
+                      title="Edit"
+                    >
+                      <Edit3 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(selectedEntry.id)}
+                      className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all"
+                      title="Delete"
+                    >
+                      <X size={18} />
+                    </button>
+                  </>
                 )}
               </div>
             </motion.div>
@@ -786,15 +823,42 @@ export function Timetable() {
         )}
       </AnimatePresence>
 
-      {/* Add Entry Modal */}
+      {/* Add Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <AddEntryModal
+          <EntryForm
+            title="Add Timetable Entry"
+            submitLabel="Add Entry"
+            initial={emptyForm}
             classes={classes}
             subjects={subjects}
             teachers={teachers}
             onClose={() => setShowAddModal(false)}
-            onSuccess={() => { fetchData(); }}
+            onSubmit={handleAdd}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {editingEntry && (
+          <EntryForm
+            title="Edit Timetable Entry"
+            submitLabel="Save Changes"
+            initial={{
+              classId: editingEntry.classSection.id,
+              subjectId: editingEntry.subjectId,
+              teacherId: editingEntry.teacherId,
+              dayOfWeek: editingEntry.dayOfWeek,
+              startTime: editingEntry.startTime,
+              endTime: editingEntry.endTime,
+              room: editingEntry.room ?? '',
+            }}
+            classes={classes}
+            subjects={subjects}
+            teachers={teachers}
+            onClose={() => setEditingEntry(null)}
+            onSubmit={handleEdit}
           />
         )}
       </AnimatePresence>

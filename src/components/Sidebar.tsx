@@ -259,7 +259,7 @@ export function Sidebar() {
         <div className="flex flex-col gap-5 mt-auto">
           {user?.role === 'STUDENT' ? (
             <>
-              <Link 
+              {/* <Link 
                 to="/support"
                 className={cn(
                   "p-3 rounded-2xl transition-all duration-200 group relative",
@@ -268,7 +268,7 @@ export function Sidebar() {
                 title="ICT Support"
               >
                 <LifeBuoy size={22} strokeWidth={location.pathname === '/support' ? 2.5 : 2} />
-              </Link>
+              </Link> */}
               <Link 
                 to="/settings"
                 className={cn(
