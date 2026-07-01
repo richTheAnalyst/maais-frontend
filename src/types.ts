@@ -5,6 +5,7 @@ export interface User {
   username: string;
   name: string;
   role: UserRole;
+  rawRole?: string
   departmentId?: string;
   staffProfileId?: string;
   studentProfileId?: string;

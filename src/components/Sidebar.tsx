@@ -54,7 +54,7 @@ export function Sidebar() {
       icon: Users, 
       label: 'People', 
       id: 'people', 
-      roles: ['SUPER_ADMIN', 'HEADMASTER'],
+      roles: ['SUPER_ADMIN', 'HEADMASTER','HOD'],
       subItems: [
         { label: 'Staff Directory', path: '/identity/staff' },
 /*         { label: 'Departmental Hierarchy', path: '/identity/departments' },
@@ -76,6 +76,14 @@ export function Sidebar() {
       ]
     }, */
 
+    {
+      icon: Cpu,
+      label: 'Academic Setup',
+      id: 'academic-setup',
+      path: '/academic-setup',
+      roles: ['SUPER_ADMIN', 'HEADMASTER']
+    },
+
     // 4. SCHEDULING & TIMETABLE
     { 
       icon: Clock, 
@@ -87,6 +95,17 @@ export function Sidebar() {
         { label: 'Event Calendar', path: '/timetable' }
       ]
     },
+
+    {
+  icon: GraduationCap,
+  label: 'Grading',
+  id: 'grading',
+  roles: ['SUPER_ADMIN', 'HEADMASTER'],
+  subItems: [
+    { label: 'Grade Sheet', path: '/grading' },
+    { label: 'Grading Rules', path: '/grading-rules' },
+  ]
+},
 
     // 5. FINANCE & PROCUREMENT
     /* { 
@@ -124,7 +143,8 @@ export function Sidebar() {
 /*     { icon: Calendar, label: 'Timetable', id: 'timetable', path: '/timetable', roles: ['TEACHER', 'STUDENT', 'SUPER_ADMIN'] },
  *//*     { icon: AlertCircle, label: 'Revisions', id: 'revisions', path: '/revisions', roles: ['TEACHER', 'HOD', 'SUPER_ADMIN'], badge: 3 },
  *//*     { icon: ClipboardCheck, label: 'Missing Observations', id: 'missing-obs', path: '/missing-observations', roles: ['TEACHER', 'HOD', 'SUPER_ADMIN'], badge: 5, badgeColor: 'bg-amber-500' },
- */    { icon: GraduationCap, label: 'Grading', id: 'grading', path: '/grading', roles: ['TEACHER', 'HOD', 'SUPER_ADMIN'] },
+ */    { icon: GraduationCap, label: 'Grading', id: 'grading', path: '/grading', roles: ['TEACHER', 'HOD'] },
+    { icon: TrendingUp, label: 'Analytics', id: 'analytics', path: '/analytics', roles: ['TEACHER', 'HOD'] },
     { icon: Database, label: 'Archive', id: 'archive', path: '/archive', roles: ['SUPER_ADMIN', 'HEADMASTER', 'HOD'] },
 /*     { icon: ShieldCheck, label: 'Certification', id: 'certification', path: '/certification', roles: ['HOD'], badge: 2, badgeColor: 'bg-emerald-600' },
  */    { icon: TrendingUp, label: 'Journey', id: 'journey', path: '/journey', roles: ['STUDENT'] },

@@ -1,31 +1,59 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, GraduationCap, TrendingUp, AlertCircle,
-  CheckCircle2, Clock, ShieldAlert, ShieldCheck, Radio, FileCheck,
-  LifeBuoy, StickyNote, Zap, Lock, ArrowUpRight,
-  MoreVertical, ThumbsUp, ThumbsDown, ExternalLink,
-  Calendar, User, UserPlus, ChevronRight, X, Plus,
-  Loader2, RefreshCw
-} from 'lucide-react';
+  Users,
+  GraduationCap,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  ShieldAlert,
+  ShieldCheck,
+  Radio,
+  FileCheck,
+  LifeBuoy,
+  StickyNote,
+  Zap,
+  Lock,
+  ArrowUpRight,
+  MoreVertical,
+  ThumbsUp,
+  ThumbsDown,
+  ExternalLink,
+  Calendar,
+  User,
+  UserPlus,
+  ChevronRight,
+  X,
+  Plus,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Cell
-} from 'recharts';
-import { BookOpen, Sparkles } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { useRole } from '../context/RoleContext';
-import api from '../lib/api';
-
-
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+import { BookOpen, Sparkles } from "lucide-react";
+import { cn } from "../lib/utils";
+import { useRole } from "../context/RoleContext";
+import api from "../lib/api";
 
 function Sparkline({ color }: { color: string }) {
   return (
     <svg className="w-16 h-8 overflow-visible" viewBox="0 0 100 40">
       <path
         d="M0,35 Q10,10 20,25 T40,15 T60,20 T80,10 T100,5"
-        fill="none" stroke={color} strokeWidth="3" strokeLinecap="round"
+        fill="none"
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
       />
     </svg>
   );
@@ -33,7 +61,11 @@ function Sparkline({ color }: { color: string }) {
 
 interface PulseData {
   enrollment: { class: string; count: number; capacity: number }[];
-  subjectPerformance: { subjectId: string; averageScore: string; studentCount: number }[];
+  subjectPerformance: {
+    subjectId: string;
+    averageScore: string;
+    studentCount: number;
+  }[];
   attendance: { daysPresent: number | null; totalDays: number | null };
 }
 
@@ -60,15 +92,13 @@ interface HealthData {
   };
 }
 
-
-
 export function AdminHome() {
   const { user } = useRole();
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [fabOpen, setFabOpen] = React.useState(false);
   const [notepadContent, setNotepadContent] = React.useState(
-    localStorage.getItem('admin_notepad') || 'Check SHS 1 enrollment by 2 PM'
+    localStorage.getItem("admin_notepad") || "Check SHS 1 enrollment by 2 PM",
   );
   const [activeAction, setActiveAction] = React.useState<string | null>(null);
   const [isFreezeActive, setIsFreezeActive] = React.useState(false);
@@ -81,13 +111,16 @@ export function AdminHome() {
   const [isLoading, setIsLoading] = React.useState(true);
 
   //analytics filter states
-  const [filteredPerformance, setFilteredPerformance] = React.useState<any>(null);
-const [isLoadingFiltered, setIsLoadingFiltered] = React.useState(false);
-const [classes, setClasses] = React.useState<any[]>([]);
-const [departments, setDepartments] = React.useState<any[]>([]);
-const [typeFilter, setTypeFilter] = React.useState<'ALL' | 'CORE' | 'ELECTIVE'>('ALL');
-const [classFilter, setClassFilter] = React.useState<string>('');
-const [departmentFilter, setDepartmentFilter] = React.useState<string>('');
+  const [filteredPerformance, setFilteredPerformance] =
+    React.useState<any>(null);
+  const [isLoadingFiltered, setIsLoadingFiltered] = React.useState(false);
+  const [classes, setClasses] = React.useState<any[]>([]);
+  const [departments, setDepartments] = React.useState<any[]>([]);
+  const [typeFilter, setTypeFilter] = React.useState<
+    "ALL" | "CORE" | "ELECTIVE"
+  >("ALL");
+  const [classFilter, setClassFilter] = React.useState<string>("");
+  const [departmentFilter, setDepartmentFilter] = React.useState<string>("");
 
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -95,7 +128,7 @@ const [departmentFilter, setDepartmentFilter] = React.useState<string>('');
   }, []);
 
   React.useEffect(() => {
-    localStorage.setItem('admin_notepad', notepadContent);
+    localStorage.setItem("admin_notepad", notepadContent);
   }, [notepadContent]);
 
   React.useEffect(() => {
@@ -103,15 +136,15 @@ const [departmentFilter, setDepartmentFilter] = React.useState<string>('');
       setIsLoading(true);
       try {
         const [pulseRes, healthRes, yearRes] = await Promise.all([
-          api.get('/comms/analytics/pulse'),
-          api.get('/archive/health'),
-          api.get('/academic/years/active'),
+          api.get("/comms/analytics/pulse"),
+          api.get("/archive/health"),
+          api.get("/academic/years/active"),
         ]);
         setPulse(pulseRes.data);
         setHealth(healthRes.data);
         setActiveYear(yearRes.data);
       } catch (err) {
-        console.error('Failed to load admin dashboard', err);
+        console.error("Failed to load admin dashboard", err);
       } finally {
         setIsLoading(false);
       }
@@ -120,62 +153,75 @@ const [departmentFilter, setDepartmentFilter] = React.useState<string>('');
   }, []);
 
   const formatTime = (date: Date) =>
-    date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
   const formatDate = (date: Date) =>
-    date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    date.toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
 
   const executeAction = (action: string) => {
-    if (action === 'Emergency Freeze') setActiveAction('freeze');
-    else if (action === 'Register Node') setActiveAction('register');
-    else if (action === 'Broadcast Pulse') setActiveAction('broadcast');
+    if (action === "Emergency Freeze") setActiveAction("freeze");
+    else if (action === "Register Node") setActiveAction("register");
+    else if (action === "Broadcast Pulse") setActiveAction("broadcast");
     setFabOpen(false);
   };
 
   //use effect for filter analytics
   React.useEffect(() => {
-  async function loadDashboard() {
-    setIsLoading(true);
-    try {
-      const [pulseRes, healthRes, yearRes, classesRes, deptRes] = await Promise.all([
-        api.get('/comms/analytics/pulse'),
-        api.get('/archive/health'),
-        api.get('/academic/years/active'),
-        api.get('/academic/classes'),
-        api.get('/academic/departments'),
-      ]);
-      setPulse(pulseRes.data);
-      setHealth(healthRes.data);
-      setActiveYear(yearRes.data);
-      setClasses(classesRes.data);
-      setDepartments(deptRes.data);
-    } catch (err) {
-      console.error('Failed to load admin dashboard', err);
-    } finally {
-      setIsLoading(false);
+    async function loadDashboard() {
+      setIsLoading(true);
+      try {
+        const [pulseRes, healthRes, yearRes, classesRes, deptRes] =
+          await Promise.all([
+            api.get("/comms/analytics/pulse"),
+            api.get("/archive/health"),
+            api.get("/academic/years/active"),
+            api.get("/academic/classes"),
+            api.get("/academic/departments"),
+          ]);
+        setPulse(pulseRes.data);
+        setHealth(healthRes.data);
+        setActiveYear(yearRes.data);
+        setClasses(classesRes.data);
+        setDepartments(deptRes.data);
+      } catch (err) {
+        console.error("Failed to load admin dashboard", err);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }
-  loadDashboard();
-}, []);
+    loadDashboard();
+  }, []);
 
   //fetc function for analytics
   const fetchFilteredPerformance = React.useCallback(async () => {
-  setIsLoadingFiltered(true);
-  try {
-    const params: any = {};
-    if (classFilter) params.classId = classFilter;
-    if (departmentFilter) params.departmentId = departmentFilter;
-    if (typeFilter !== 'ALL') params.subjectType = typeFilter;
+    setIsLoadingFiltered(true);
+    try {
+      const params: any = {};
+      if (classFilter) params.classId = classFilter;
+      if (departmentFilter) params.departmentId = departmentFilter;
+      if (typeFilter !== "ALL") params.subjectType = typeFilter;
 
-const res = await api.get('/grading/performance-filtered', { params });    setFilteredPerformance(res.data);
-  } catch (err) {
-    console.error('Failed to load filtered performance', err);
-  } finally {
-    setIsLoadingFiltered(false);
-  }
-}, [classFilter, departmentFilter, typeFilter]);
+      const res = await api.get("/grading/performance-filtered", { params });
+      setFilteredPerformance(res.data);
+    } catch (err) {
+      console.error("Failed to load filtered performance", err);
+    } finally {
+      setIsLoadingFiltered(false);
+    }
+  }, [classFilter, departmentFilter, typeFilter]);
 
-React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance]);
+  React.useEffect(() => {
+    fetchFilteredPerformance();
+  }, [fetchFilteredPerformance]);
 
   // ─── Derived stats ──────────────────────────────────────────────────────────
   const totalStudents = health?.counts.activeStudents ?? 0;
@@ -183,60 +229,88 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
   const totalReportCards = health?.counts.totalReportCards ?? 0;
   const pendingObservations = health?.counts.pendingObservations ?? 0;
 
-  const gradingProgress = totalGrades > 0
-    ? Math.min(100, Math.round((totalGrades / Math.max(totalGrades + pendingObservations, 1)) * 100))
-    : 0;
+  const gradingProgress =
+    totalGrades > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (totalGrades / Math.max(totalGrades + pendingObservations, 1)) *
+              100,
+          ),
+        )
+      : 0;
 
   // Build performance chart from pulse data
-  const performanceData = pulse?.subjectPerformance
-    ?.filter(s => s.averageScore !== null)
-    .slice(0, 6)
-    .map((s, i) => ({
-      name: `Subject ${i + 1}`,
-      score: parseFloat(s.averageScore ?? '0'),
-      color: ['#059669', '#0284c7', '#7c3aed', '#db2777', '#ea580c', '#65a30d'][i % 6],
-    })) ?? [];
+  const performanceData =
+    pulse?.subjectPerformance
+      ?.filter((s) => s.averageScore !== null)
+      .slice(0, 6)
+      .map((s, i) => ({
+        name: `Subject ${i + 1}`,
+        score: parseFloat(s.averageScore ?? "0"),
+        color: [
+          "#059669",
+          "#0284c7",
+          "#7c3aed",
+          "#db2777",
+          "#ea580c",
+          "#65a30d",
+        ][i % 6],
+      })) ?? [];
 
   const vitalCards = [
     {
-      label: 'Student Census',
-      value: isLoading ? '...' : totalStudents.toLocaleString(),
+      label: "Student Census",
+      value: isLoading ? "..." : totalStudents.toLocaleString(),
       subtext: `${health?.counts.archivedStudents ?? 0} Archived / Alumni`,
-      icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', trend: '#2563eb',
+      icon: Users,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      trend: "#2563eb",
     },
     {
-      label: 'Total Grades Entered',
-      value: isLoading ? '...' : totalGrades.toLocaleString(),
+      label: "Total Grades Entered",
+      value: isLoading ? "..." : totalGrades.toLocaleString(),
       subtext: `${totalReportCards} report cards generated`,
-      icon: GraduationCap, color: 'text-indigo-600', bg: 'bg-indigo-50', trend: '#4f46e5',
+      icon: GraduationCap,
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      trend: "#4f46e5",
     },
     {
-      label: 'Grading Progress',
-      value: isLoading ? '...' : `${gradingProgress}%`,
+      label: "Grading Progress",
+      value: isLoading ? "..." : `${gradingProgress}%`,
       subtext: `${pendingObservations} observations pending`,
-      icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', trend: '#059669',
+      icon: TrendingUp,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      trend: "#059669",
       progress: gradingProgress,
     },
     {
-      label: 'Pending Observations',
-      value: isLoading ? '...' : `${pendingObservations} Flags`,
-      subtext: 'Missing behavioral observations',
-      icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50', trend: '#e11d48',
+      label: "Pending Observations",
+      value: isLoading ? "..." : `${pendingObservations} Flags`,
+      subtext: "Missing behavioral observations",
+      icon: AlertCircle,
+      color: "text-rose-600",
+      bg: "bg-rose-50",
+      trend: "#e11d48",
     },
   ];
 
   // Build activity log from enrollment data
-  const activityLog = pulse?.enrollment?.slice(0, 5).map((e, i) => ({
-    id: String(i),
-    time: `${e.class}`,
-    event: `${e.count} students enrolled — capacity ${e.capacity}`,
-    type: e.count >= e.capacity ? 'alert' : e.count > 0 ? 'academic' : 'system',
-  })) ?? [];
+  const activityLog =
+    pulse?.enrollment?.slice(0, 5).map((e, i) => ({
+      id: String(i),
+      time: `${e.class}`,
+      event: `${e.count} students enrolled — capacity ${e.capacity}`,
+      type:
+        e.count >= e.capacity ? "alert" : e.count > 0 ? "academic" : "system",
+    })) ?? [];
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 relative p-8">
       <div className="max-w-7xl mx-auto space-y-8 pb-20">
-
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-10 opacity-[0.03]">
@@ -244,30 +318,40 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
           </div>
           <div className="relative">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight italic font-display">
-              Good morning, {user?.name?.split(' ')[0] ?? 'Admin'}
+              Good morning, {user?.name?.split(" ")[0] ?? "Admin"}
             </h1>
             <div className="flex items-center gap-4 mt-2">
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{formatDate(currentTime)}</p>
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                {formatDate(currentTime)}
+              </p>
               <div className="w-1 h-1 rounded-full bg-slate-300" />
-              <p className="text-sm font-black text-slate-900 font-mono tracking-tighter tabular-nums">{formatTime(currentTime)}</p>
+              <p className="text-sm font-black text-slate-900 font-mono tracking-tighter tabular-nums">
+                {formatTime(currentTime)}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4 relative">
             <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 shadow-sm">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
               <span className="text-[10px] font-black uppercase tracking-widest">
-                {isLoading ? 'Loading...' : health?.status === 'healthy' ? 'System Live' : 'Checking...'}
+                {isLoading
+                  ? "Loading..."
+                  : health?.status === "healthy"
+                    ? "System Live"
+                    : "Checking..."}
               </span>
             </div>
             <div className="px-5 py-2.5 bg-slate-900 text-white rounded-2xl flex items-center gap-3 shadow-lg shadow-slate-900/10">
               <Calendar size={14} className="text-slate-400" />
               <span className="text-[11px] font-black tracking-widest uppercase">
-                {activeYear?.label ?? '—'} | {activeYear?.terms?.find((t: any) => t.isActive)?.termNumber?.replace('_', ' ') ?? '—'}
+                {activeYear?.label ?? "—"} |{" "}
+                {activeYear?.terms
+                  ?.find((t: any) => t.isActive)
+                  ?.termNumber?.replace("_", " ") ?? "—"}
               </span>
             </div>
           </div>
         </header>
-
 
         {/* Vital Signs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -280,23 +364,42 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
               className="bg-white p-6 rounded-[2rem] border border-slate-200/50 shadow-sm hover:shadow-md transition-all relative group"
             >
               <div className="flex justify-between items-start mb-4">
-                <div className={cn('w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-transform group-hover:scale-110', card.bg, card.color)}>
+                <div
+                  className={cn(
+                    "w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-transform group-hover:scale-110",
+                    card.bg,
+                    card.color,
+                  )}
+                >
                   <card.icon size={22} />
                 </div>
                 <Sparkline color={card.trend} />
               </div>
               <p className="text-[28px] font-black text-slate-900 tracking-tighter leading-none mb-2">
-                {isLoading ? <Loader2 size={24} className="animate-spin text-slate-300" /> : card.value}
+                {isLoading ? (
+                  <Loader2 size={24} className="animate-spin text-slate-300" />
+                ) : (
+                  card.value
+                )}
               </p>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">{card.label}</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                {card.label}
+              </p>
               {card.progress !== undefined ? (
                 <div className="space-y-2">
                   <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${card.progress}%` }}
-                      transition={{ duration: 1.5, ease: 'easeOut' }}
-                      className={cn('h-full rounded-full', card.progress < 40 ? 'bg-rose-500' : card.progress < 75 ? 'bg-amber-500' : 'bg-emerald-500')}
+                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      className={cn(
+                        "h-full rounded-full",
+                        card.progress < 40
+                          ? "bg-rose-500"
+                          : card.progress < 75
+                            ? "bg-amber-500"
+                            : "bg-emerald-500",
+                      )}
                     />
                   </div>
                   <p className="text-[10px] font-bold text-slate-500 flex justify-between">
@@ -305,191 +408,264 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
                   </p>
                 </div>
               ) : (
-                <p className="text-[11px] font-bold text-slate-500/80 leading-snug">{card.subtext}</p>
+                <p className="text-[11px] font-bold text-slate-500/80 leading-snug">
+                  {card.subtext}
+                </p>
               )}
             </motion.div>
           ))}
         </div>
 
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
           {/* Left 8 columns */}
           <div className="lg:col-span-8 space-y-8">
-
-
-             {/* Performance Chart */}
+            {/* Performance Chart */}
             <section className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm relative overflow-hidden">
-  <div className="absolute top-0 right-0 p-8">
-    <Radio className="text-slate-100" size={100} />
-  </div>
+              <div className="absolute top-0 right-0 p-8">
+                <Radio className="text-slate-100" size={100} />
+              </div>
 
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative">
-    <div>
-      <h3 className="text-[14px] font-black text-slate-900 uppercase tracking-[0.25em]">
-        Subject Performance Heatmap
-      </h3>
-      <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-widest">
-        Filter by class, department, or subject type
-      </p>
-    </div>
-    {isLoadingFiltered && <Loader2 size={20} className="animate-spin text-slate-300" />}
-  </div>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative">
+                <div>
+                  <h3 className="text-[14px] font-black text-slate-900 uppercase tracking-[0.25em]">
+                    Subject Performance Heatmap
+                  </h3>
+                  <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-widest">
+                    Filter by class, department, or subject type
+                  </p>
+                </div>
+                {isLoadingFiltered && (
+                  <Loader2 size={20} className="animate-spin text-slate-300" />
+                )}
+              </div>
 
-  {/* Filters */}
-  <div className="flex flex-wrap items-center gap-3 mb-8 relative">
-    {/* Type segmented control */}
-    <div className="flex bg-slate-100 p-1 rounded-xl">
-      {[
-        { id: 'ALL', label: 'All' },
-        { id: 'CORE', label: 'Core' },
-        { id: 'ELECTIVE', label: 'Elective' },
-      ].map(t => (
-        <button
-          key={t.id}
-          onClick={() => setTypeFilter(t.id as any)}
-          className={cn(
-            'px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all',
-            typeFilter === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-          )}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-3 mb-8 relative">
+                {/* Type segmented control */}
+                <div className="flex bg-slate-100 p-1 rounded-xl">
+                  {[
+                    { id: "ALL", label: "All" },
+                    { id: "CORE", label: "Core" },
+                    { id: "ELECTIVE", label: "Elective" },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setTypeFilter(t.id as any)}
+                      className={cn(
+                        "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                        typeFilter === t.id
+                          ? "bg-white text-slate-900 shadow-sm"
+                          : "text-slate-400 hover:text-slate-600",
+                      )}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
 
-    <select
-      value={classFilter}
-      onChange={e => setClassFilter(e.target.value)}
-      className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest outline-none"
-    >
-      <option value="">All Classes</option>
-      {classes.map(c => (
-        <option key={c.id} value={c.id}>{c.level.replace('FORM_', 'Form ')} {c.name}</option>
-      ))}
-    </select>
+                <select
+                  value={classFilter}
+                  onChange={(e) => setClassFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest outline-none"
+                >
+                  <option value="">All Classes</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.level.replace("FORM_", "Form ")} {c.name}
+                    </option>
+                  ))}
+                </select>
 
-    <select
-      value={departmentFilter}
-      onChange={e => setDepartmentFilter(e.target.value)}
-      className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest outline-none"
-    >
-      <option value="">All Departments</option>
-      {departments.map(d => (
-        <option key={d.id} value={d.id}>{d.name}</option>
-      ))}
-    </select>
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest outline-none"
+                >
+                  <option value="">All Departments</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
 
-    {(classFilter || departmentFilter || typeFilter !== 'ALL') && (
-      <button
-        onClick={() => { setClassFilter(''); setDepartmentFilter(''); setTypeFilter('ALL'); }}
-        className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-700 transition-all"
-      >
-        Clear Filters
-      </button>
-    )}
-  </div>
+                {(classFilter || departmentFilter || typeFilter !== "ALL") && (
+                  <button
+                    onClick={() => {
+                      setClassFilter("");
+                      setDepartmentFilter("");
+                      setTypeFilter("ALL");
+                    }}
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-700 transition-all"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </div>
 
-  {/* Core vs Elective summary cards (only show when type filter is ALL) */}
-  {typeFilter === 'ALL' && filteredPerformance?.summary && (
-    <div className="grid grid-cols-2 gap-4 mb-8">
-      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex items-center gap-4">
-        <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center">
-          <ShieldCheck size={18} />
-        </div>
-        <div>
-          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Core Average</p>
-          <p className="text-2xl font-black text-emerald-900">
-            {filteredPerformance.summary.coreAverage ? `${filteredPerformance.summary.coreAverage}%` : '—'}
-          </p>
-          <p className="text-[10px] font-bold text-emerald-500">{filteredPerformance.summary.coreSubjectCount} subjects</p>
-        </div>
-      </div>
-      <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex items-center gap-4">
-        <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center">
-          <Sparkles size={18} />
-        </div>
-        <div>
-          <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Elective Average</p>
-          <p className="text-2xl font-black text-indigo-900">
-            {filteredPerformance.summary.electiveAverage ? `${filteredPerformance.summary.electiveAverage}%` : '—'}
-          </p>
-          <p className="text-[10px] font-bold text-indigo-500">{filteredPerformance.summary.electiveSubjectCount} subjects</p>
-        </div>
-      </div>
-    </div>
-  )}
-
-  {/* Chart */}
-  {!filteredPerformance?.subjects?.length && !isLoadingFiltered ? (
-    <div className="h-64 flex items-center justify-center">
-      <div className="text-center">
-        <TrendingUp size={40} className="text-slate-200 mx-auto mb-3" />
-        <p className="text-sm font-bold text-slate-400">No grade data for this filter</p>
-        <p className="text-xs text-slate-300 mt-1">Try a different class or department</p>
-      </div>
-    </div>
-  ) : (
-    <>
-      <div className="h-[300px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={filteredPerformance?.subjects?.slice(0, 10) ?? []}
-            margin={{ top: 20, right: 30, left: 0, bottom: 40 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-            <XAxis
-              dataKey="subjectName"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 900 }}
-              angle={-25}
-              textAnchor="end"
-              height={60}
-            />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} domain={[0, 100]} />
-            <Tooltip
-              cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const d = payload[0].payload;
-                  return (
-                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xl">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{d.subjectName}</p>
-                      <p className="text-xl font-black text-slate-900">{Number(d.averageScore).toFixed(1)}%</p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-1">
-                        {d.type} {d.departmentName ? `· ${d.departmentName}` : ''} · {d.studentCount} entries
+              {/* Core vs Elective summary cards (only show when type filter is ALL) */}
+              {typeFilter === "ALL" && filteredPerformance?.summary && (
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center">
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">
+                        Core Average
+                      </p>
+                      <p className="text-2xl font-black text-emerald-900">
+                        {filteredPerformance.summary.coreAverage
+                          ? `${filteredPerformance.summary.coreAverage}%`
+                          : "—"}
+                      </p>
+                      <p className="text-[10px] font-bold text-emerald-500">
+                        {filteredPerformance.summary.coreSubjectCount} subjects
                       </p>
                     </div>
-                  );
-                }
-                return null;
-              }}
-            />
-            <Bar dataKey="averageScore" radius={[12, 12, 4, 4]} barSize={36}>
-              {(filteredPerformance?.subjects?.slice(0, 10) ?? []).map((entry: any, index: number) => (
-                <Cell key={`cell-${index}`} fill={entry.type === 'CORE' ? '#059669' : '#6366f1'} fillOpacity={0.85} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+                  </div>
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center">
+                      <Sparkles size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">
+                        Elective Average
+                      </p>
+                      <p className="text-2xl font-black text-indigo-900">
+                        {filteredPerformance.summary.electiveAverage
+                          ? `${filteredPerformance.summary.electiveAverage}%`
+                          : "—"}
+                      </p>
+                      <p className="text-[10px] font-bold text-indigo-500">
+                        {filteredPerformance.summary.electiveSubjectCount}{" "}
+                        subjects
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-      {/* Legend */}
-      <div className="flex items-center gap-6 mt-6 pt-6 border-t border-slate-50">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-emerald-600" />
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Core Subjects</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-indigo-600" />
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Elective Subjects</span>
-        </div>
-        <span className="text-[10px] font-bold text-slate-300 ml-auto">Showing top 10 by average score</span>
-      </div>
-    </>
-  )}
-</section>
+              {/* Chart */}
+              {!filteredPerformance?.subjects?.length && !isLoadingFiltered ? (
+                <div className="h-64 flex items-center justify-center">
+                  <div className="text-center">
+                    <TrendingUp
+                      size={40}
+                      className="text-slate-200 mx-auto mb-3"
+                    />
+                    <p className="text-sm font-bold text-slate-400">
+                      No grade data for this filter
+                    </p>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Try a different class or department
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={filteredPerformance?.subjects?.slice(0, 10) ?? []}
+                        margin={{ top: 20, right: 30, left: 0, bottom: 40 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#f1f5f9"
+                        />
+                        <XAxis
+                          dataKey="subjectName"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{
+                            fill: "#94a3b8",
+                            fontSize: 9,
+                            fontWeight: 900,
+                          }}
+                          angle={-25}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{
+                            fill: "#94a3b8",
+                            fontSize: 10,
+                            fontWeight: 900,
+                          }}
+                          domain={[0, 100]}
+                        />
+                        <Tooltip
+                          cursor={{ fill: "rgba(241, 245, 249, 0.5)" }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload;
+                              return (
+                                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xl">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                                    {d.subjectName}
+                                  </p>
+                                  <p className="text-xl font-black text-slate-900">
+                                    {Number(d.averageScore).toFixed(1)}%
+                                  </p>
+                                  <p className="text-[10px] font-bold text-slate-400 mt-1">
+                                    {d.type}{" "}
+                                    {d.departmentName
+                                      ? `· ${d.departmentName}`
+                                      : ""}{" "}
+                                    · {d.studentCount} entries
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar
+                          dataKey="averageScore"
+                          radius={[12, 12, 4, 4]}
+                          barSize={36}
+                        >
+                          {(
+                            filteredPerformance?.subjects?.slice(0, 10) ?? []
+                          ).map((entry: any, index: number) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={
+                                entry.type === "CORE" ? "#059669" : "#6366f1"
+                              }
+                              fillOpacity={0.85}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex items-center gap-6 mt-6 pt-6 border-t border-slate-50">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-emerald-600" />
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        Core Subjects
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-indigo-600" />
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        Elective Subjects
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-300 ml-auto">
+                      Showing top 10 by average score
+                    </span>
+                  </div>
+                </>
+              )}
+            </section>
 
             {/* Class Enrollment Feed */}
             <section className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden">
@@ -498,22 +674,32 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
               </div>
               <div className="flex items-center justify-between mb-8 relative">
                 <div>
-                  <h3 className="text-[14px] font-black text-white uppercase tracking-[0.25em]">Class Enrollment Feed</h3>
+                  <h3 className="text-[14px] font-black text-white uppercase tracking-[0.25em]">
+                    Class Enrollment Feed
+                  </h3>
                   <p className="text-[10px] font-medium text-slate-500 mt-1 uppercase tracking-widest">
                     Live student distribution by class
                   </p>
                 </div>
-                <Link to="/identity/students" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white transition-all">
+                <Link
+                  to="/identity/students"
+                  className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white transition-all"
+                >
                   View All Students
                 </Link>
               </div>
               <div className="space-y-2 relative">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 size={24} className="text-slate-600 animate-spin" />
+                    <Loader2
+                      size={24}
+                      className="text-slate-600 animate-spin"
+                    />
                   </div>
                 ) : pulse?.enrollment?.length === 0 ? (
-                  <p className="text-slate-600 text-sm font-bold text-center py-8">No enrollment data yet</p>
+                  <p className="text-slate-600 text-sm font-bold text-center py-8">
+                    No enrollment data yet
+                  </p>
                 ) : (
                   pulse?.enrollment?.map((item, i) => (
                     <motion.div
@@ -529,11 +715,15 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
                       <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(100, (item.count / item.capacity) * 100)}%` }}
+                          animate={{
+                            width: `${Math.min(100, (item.count / item.capacity) * 100)}%`,
+                          }}
                           transition={{ duration: 0.8, delay: i * 0.05 }}
                           className={cn(
-                            'h-full rounded-full',
-                            item.count >= item.capacity ? 'bg-rose-500' : 'bg-emerald-500'
+                            "h-full rounded-full",
+                            item.count >= item.capacity
+                              ? "bg-rose-500"
+                              : "bg-emerald-500",
                           )}
                         />
                       </div>
@@ -547,13 +737,10 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
             </section>
           </div>
 
-          
-
           {/* Action Center: Right 4 Columns */}
           <aside className="lg:col-span-4 space-y-8">
-            
             {/* 4. Action Center (Right Side Sidebar) */}
-            
+
             {/* DB Health */}
             <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200/60 shadow-sm">
               <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.25em] mb-6">
@@ -566,39 +753,78 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
               ) : (
                 <div className="space-y-3">
                   {[
-                    { label: 'Total Students', value: health?.counts.totalStudents ?? 0 },
-                    { label: 'Active Students', value: health?.counts.activeStudents ?? 0 },
-                    { label: 'Archived / Alumni', value: health?.counts.archivedStudents ?? 0 },
-                    { label: 'Grade Entries', value: health?.counts.totalGrades ?? 0 },
-                    { label: 'Report Cards', value: health?.counts.totalReportCards ?? 0 },
-                    { label: 'Transcripts', value: health?.counts.totalTranscripts ?? 0 },
-                    { label: 'Pending Observations', value: health?.counts.pendingObservations ?? 0, highlight: true },
+                    {
+                      label: "Total Students",
+                      value: health?.counts.totalStudents ?? 0,
+                    },
+                    {
+                      label: "Active Students",
+                      value: health?.counts.activeStudents ?? 0,
+                    },
+                    {
+                      label: "Archived / Alumni",
+                      value: health?.counts.archivedStudents ?? 0,
+                    },
+                    {
+                      label: "Grade Entries",
+                      value: health?.counts.totalGrades ?? 0,
+                    },
+                    {
+                      label: "Report Cards",
+                      value: health?.counts.totalReportCards ?? 0,
+                    },
+                    {
+                      label: "Transcripts",
+                      value: health?.counts.totalTranscripts ?? 0,
+                    },
+                    {
+                      label: "Pending Observations",
+                      value: health?.counts.pendingObservations ?? 0,
+                      highlight: true,
+                    },
                   ].map((item, i) => (
-                    <div key={i} className={cn(
-                      'flex justify-between items-center py-2 border-b border-slate-50',
-                      item.highlight && item.value > 0 ? 'text-rose-600' : ''
-                    )}>
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">{item.label}</span>
-                      <span className={cn('text-sm font-black', item.highlight && item.value > 0 ? 'text-rose-600' : 'text-slate-900')}>
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex justify-between items-center py-2 border-b border-slate-50",
+                        item.highlight && item.value > 0 ? "text-rose-600" : "",
+                      )}
+                    >
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">
+                        {item.label}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-sm font-black",
+                          item.highlight && item.value > 0
+                            ? "text-rose-600"
+                            : "text-slate-900",
+                        )}
+                      >
                         {item.value.toLocaleString()}
                       </span>
                     </div>
                   ))}
                   <div className="flex justify-between items-center pt-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">Status</span>
-                    <span className={cn(
-                      'text-[10px] font-black uppercase px-2 py-1 rounded-lg',
-                      health?.status === 'healthy' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                    )}>
-                      {health?.status ?? 'Unknown'}
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">
+                      Status
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[10px] font-black uppercase px-2 py-1 rounded-lg",
+                        health?.status === "healthy"
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-rose-50 text-rose-600",
+                      )}
+                    >
+                      {health?.status ?? "Unknown"}
                     </span>
                   </div>
                 </div>
               )}
             </div>
 
-
-           {/* Admin Notepad */}
+            {/* Admin Notepad */}
             <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200 shadow-inner relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-[0.05]">
                 <Zap size={60} />
@@ -607,32 +833,40 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
                 <div className="w-8 h-8 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center">
                   <StickyNote size={16} />
                 </div>
-                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.25em]">Strategic Memo</h3>
+                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.25em]">
+                  Strategic Memo
+                </h3>
               </div>
               <textarea
                 value={notepadContent}
-                onChange={e => setNotepadContent(e.target.value)}
+                onChange={(e) => setNotepadContent(e.target.value)}
                 className="w-full h-40 bg-transparent text-[13px] font-bold text-slate-600 placeholder:text-slate-400 focus:outline-none resize-none leading-relaxed border-none focus:ring-0 p-0"
                 placeholder="Commit strategic reminders here..."
               />
               <div className="flex justify-between items-center mt-4">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Auto-saved locally</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">
+                  Auto-saved locally
+                </p>
                 <CheckCircle2 size={14} className="text-emerald-400" />
               </div>
             </div>
-
           </aside>
         </div>
       </div>
 
-{/* FAB */}
+      {/* FAB */}
       <div className="fixed bottom-10 right-10 z-50 flex flex-col items-end gap-3">
         <AnimatePresence>
           {fabOpen && (
             <div className="flex flex-col gap-3 items-end mb-3">
               {[
-                { label: 'Register Node', icon: UserPlus, color: 'bg-white text-slate-900', hover: 'hover:bg-slate-100' },
-               /*  { label: 'Broadcast Pulse', icon: Radio, color: 'bg-white text-slate-900', hover: 'hover:bg-slate-100' },
+                {
+                  label: "Register Node",
+                  icon: UserPlus,
+                  color: "bg-white text-slate-900",
+                  hover: "hover:bg-slate-100",
+                },
+                /*  { label: 'Broadcast Pulse', icon: Radio, color: 'bg-white text-slate-900', hover: 'hover:bg-slate-100' },
                 { label: 'Emergency Freeze', icon: Lock, color: 'bg-rose-600 text-white', hover: 'hover:bg-rose-700' }, */
               ].map((action, i) => (
                 <motion.button
@@ -641,10 +875,16 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.8, x: 20 }}
                   transition={{ delay: i * 0.05 }}
-                  className={cn('flex items-center gap-4 px-6 py-4 rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all', action.color, action.hover)}
+                  className={cn(
+                    "flex items-center gap-4 px-6 py-4 rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all",
+                    action.color,
+                    action.hover,
+                  )}
                   onClick={() => executeAction(action.label)}
                 >
-                  <span className="text-[11px] font-black uppercase tracking-[0.25em]">{action.label}</span>
+                  <span className="text-[11px] font-black uppercase tracking-[0.25em]">
+                    {action.label}
+                  </span>
                   <action.icon size={18} />
                 </motion.button>
               ))}
@@ -654,39 +894,77 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
         <button
           onClick={() => setFabOpen(!fabOpen)}
           className={cn(
-            'w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all shadow-[0_20px_60px_rgba(0,0,0,0.2)] transform active:scale-90',
-            fabOpen ? 'bg-slate-900 text-white rotate-45' :
-            isFreezeActive ? 'bg-rose-600 text-white animate-pulse' : 'bg-slate-900 text-white hover:bg-black'
+            "w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all shadow-[0_20px_60px_rgba(0,0,0,0.2)] transform active:scale-90",
+            fabOpen
+              ? "bg-slate-900 text-white rotate-45"
+              : isFreezeActive
+                ? "bg-rose-600 text-white animate-pulse"
+                : "bg-slate-900 text-white hover:bg-black",
           )}
         >
           {isFreezeActive && !fabOpen ? <Lock size={32} /> : <Plus size={32} />}
         </button>
       </div>
 
-
-     {/* Modals — kept exactly as original */}
+      {/* Modals — kept exactly as original */}
       <AnimatePresence>
-        {activeAction === 'register' && (
+        {activeAction === "register" && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setActiveAction(null)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-xl bg-white rounded-[3rem] shadow-2xl overflow-hidden p-10">
-              <h3 className="text-2xl font-black italic font-display text-slate-900 mb-2">Register New Node</h3>
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-8">Institutional Identity Provisioning</p>
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+              onClick={() => setActiveAction(null)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative w-full max-w-xl bg-white rounded-[3rem] shadow-2xl overflow-hidden p-10"
+            >
+              <h3 className="text-2xl font-black italic font-display text-slate-900 mb-2">
+                Register New Node
+              </h3>
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-8">
+                Institutional Identity Provisioning
+              </p>
               <div className="grid grid-cols-1 gap-4">
                 {[
-                  { label: 'Student Protocol', desc: 'Initialize academic and residential profile', icon: GraduationCap, path: '/identity/students' },
-                  { label: 'Faculty Protocol', desc: 'Provision instructional and access rights', icon: UserPlus, path: '/identity/staff' },
-                  { label: 'Guardian Protocol', desc: 'Link household and digital delivery', icon: Users, path: '/identity/parents' },
+                  {
+                    label: "Student Protocol",
+                    desc: "Initialize academic and residential profile",
+                    icon: GraduationCap,
+                    path: "/identity/students",
+                  },
+                  {
+                    label: "Faculty Protocol",
+                    desc: "Provision instructional and access rights",
+                    icon: UserPlus,
+                    path: "/identity/staff",
+                  },
+                  {
+                    label: "Guardian Protocol",
+                    desc: "Link household and digital delivery",
+                    icon: Users,
+                    path: "/identity/parents",
+                  },
                 ].map((p, i) => (
-                  <button key={i} onClick={() => { setActiveAction(null); navigate(p.path); }}
-                    className="flex items-center justify-between p-6 bg-slate-50 border border-slate-100 rounded-3xl hover:bg-slate-100 transition-all text-left">
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setActiveAction(null);
+                      navigate(p.path);
+                    }}
+                    className="flex items-center justify-between p-6 bg-slate-50 border border-slate-100 rounded-3xl hover:bg-slate-100 transition-all text-left"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-900 shadow-sm">
                         <p.icon size={24} />
                       </div>
                       <div>
-                        <p className="text-sm font-black italic font-display text-slate-900">{p.label}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{p.desc}</p>
+                        <p className="text-sm font-black italic font-display text-slate-900">
+                          {p.label}
+                        </p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                          {p.desc}
+                        </p>
                       </div>
                     </div>
                     <ChevronRight className="text-slate-300" />
@@ -697,31 +975,63 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
           </div>
         )}
 
-        {activeAction === 'broadcast' && (
+        {activeAction === "broadcast" && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setActiveAction(null)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl overflow-hidden">
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+              onClick={() => setActiveAction(null)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl overflow-hidden"
+            >
               <div className="p-10 bg-slate-900 text-white flex justify-between items-center">
                 <div>
-                  <h3 className="text-3xl font-black italic font-display">Broadcast Pulse</h3>
-                  <p className="text-[10px] font-black uppercase text-white/50 tracking-widest mt-2">Omni-Channel Institutional Message Delivery</p>
+                  <h3 className="text-3xl font-black italic font-display">
+                    Broadcast Pulse
+                  </h3>
+                  <p className="text-[10px] font-black uppercase text-white/50 tracking-widest mt-2">
+                    Omni-Channel Institutional Message Delivery
+                  </p>
                 </div>
-                <X className="cursor-pointer hover:text-rose-500 transition-all" onClick={() => setActiveAction(null)} />
+                <X
+                  className="cursor-pointer hover:text-rose-500 transition-all"
+                  onClick={() => setActiveAction(null)}
+                />
               </div>
               <div className="p-10 space-y-6">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Broadcast Channels</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">
+                    Broadcast Channels
+                  </label>
                   <div className="flex gap-3">
-                    {['In-App Push', 'Bulk SMS', 'Academic Email'].map(c => (
-                      <button key={c} className="flex-1 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all">{c}</button>
+                    {["In-App Push", "Bulk SMS", "Academic Email"].map((c) => (
+                      <button
+                        key={c}
+                        className="flex-1 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
+                      >
+                        {c}
+                      </button>
                     ))}
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Message Payload</label>
-                  <textarea className="w-full h-32 p-6 bg-slate-50 border border-slate-200 rounded-3xl outline-none font-medium italic resize-none" placeholder="Enter the official communication core..." />
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">
+                    Message Payload
+                  </label>
+                  <textarea
+                    className="w-full h-32 p-6 bg-slate-50 border border-slate-200 rounded-3xl outline-none font-medium italic resize-none"
+                    placeholder="Enter the official communication core..."
+                  />
                 </div>
-                <button onClick={() => { navigate('/comms'); setActiveAction(null); }} className="w-full py-5 bg-slate-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3">
+                <button
+                  onClick={() => {
+                    navigate("/comms");
+                    setActiveAction(null);
+                  }}
+                  className="w-full py-5 bg-slate-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3"
+                >
                   <Radio size={18} className="animate-pulse" />
                   Go to Comms Module
                 </button>
@@ -730,30 +1040,49 @@ React.useEffect(() => { fetchFilteredPerformance(); }, [fetchFilteredPerformance
           </div>
         )}
 
-
-
-        {activeAction === 'freeze' && (
+        {activeAction === "freeze" && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setActiveAction(null)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-md bg-white rounded-[3rem] shadow-2xl text-center p-12">
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+              onClick={() => setActiveAction(null)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative w-full max-w-md bg-white rounded-[3rem] shadow-2xl text-center p-12"
+            >
               <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-lg shadow-rose-200">
                 <Lock size={40} />
               </div>
               <h3 className="text-2xl font-black italic font-display text-slate-900 mb-4">
-                {isFreezeActive ? 'Lift Institutional Freeze?' : 'Initiate Emergency Freeze?'}
+                {isFreezeActive
+                  ? "Lift Institutional Freeze?"
+                  : "Initiate Emergency Freeze?"}
               </h3>
               <p className="text-slate-500 text-[13px] font-medium leading-relaxed mb-10">
                 {isFreezeActive
-                  ? 'This will restore write-authority across all faculty nodes.'
-                  : 'This instantly suspends grade entry across all departments.'}
+                  ? "This will restore write-authority across all faculty nodes."
+                  : "This instantly suspends grade entry across all departments."}
               </p>
               <div className="flex gap-4">
-                <button onClick={() => setActiveAction(null)} className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-2xl text-[11px] font-black uppercase tracking-widest">Abort</button>
                 <button
-                  onClick={() => { setIsFreezeActive(!isFreezeActive); setActiveAction(null); navigate('/grading'); }}
-                  className={cn('flex-1 py-4 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl', isFreezeActive ? 'bg-emerald-600' : 'bg-rose-600')}
+                  onClick={() => setActiveAction(null)}
+                  className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-2xl text-[11px] font-black uppercase tracking-widest"
                 >
-                  {isFreezeActive ? 'Restore System' : 'Execute Freeze'}
+                  Abort
+                </button>
+                <button
+                  onClick={() => {
+                    setIsFreezeActive(!isFreezeActive);
+                    setActiveAction(null);
+                    navigate("/grading");
+                  }}
+                  className={cn(
+                    "flex-1 py-4 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl",
+                    isFreezeActive ? "bg-emerald-600" : "bg-rose-600",
+                  )}
+                >
+                  {isFreezeActive ? "Restore System" : "Execute Freeze"}
                 </button>
               </div>
             </motion.div>

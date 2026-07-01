@@ -9,7 +9,7 @@ export const MobileBottomNav: React.FC = () => {
   const { setMobileMenuOpen } = useUI();
   const { user } = useRole();
 
-  if (!user || (user.role !== 'SUPER_ADMIN' && user.role !== 'HEADMASTER' && user.role !== 'ADMIN')) return null;
+  if (!user || (user.role !== 'SUPER_ADMIN' && user.role !== 'HEADMASTER' && user.role !== 'HOD' && user.role !== 'ADMIN')) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-lg border-t border-slate-200 lg:hidden flex items-center justify-around px-2 z-[90] pb-safe">
@@ -33,6 +33,17 @@ export const MobileBottomNav: React.FC = () => {
       >
         <Users size={20} />
         <span className="text-[10px] font-black uppercase tracking-widest">People</span>
+      </NavLink>
+
+      <NavLink 
+        to="/academic-setup"
+        className={({ isActive }) => cn(
+          "flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all",
+          isActive ? "text-brand-teal" : "text-slate-400"
+        )}
+      >
+        <Cpu size={20} />
+        <span className="text-[10px] font-black uppercase tracking-widest">Setup</span>
       </NavLink>
 
      {/*  <NavLink 

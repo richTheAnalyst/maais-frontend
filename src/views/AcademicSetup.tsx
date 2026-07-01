@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Layers,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import api from "../lib/api";
@@ -69,6 +70,182 @@ interface DepartmentRoster {
   hods: StaffMember[];
   teachers: StaffMember[];
 }
+
+//Assign subjectto teacher modal
+
+const AssignSubjectToTeacherModal: React.FC<{
+  department: Department;
+  roster: DepartmentRoster;
+  allClasses: ClassSection[];
+  onClose: () => void;
+  onSuccess: () => void;
+}> = ({ department, roster, allClasses, onClose, onSuccess }) => {
+  const [teacherId, setTeacherId] = React.useState("");
+  const [subjectId, setSubjectId] = React.useState(
+    roster.department.subjects[0]?.id ?? "",
+  );
+  const [classId, setClassId] = React.useState(allClasses[0]?.id ?? "");
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const eligibleStaff = [
+    ...roster.hods,
+    ...roster.teachers,
+    ...roster.headmasters,
+  ];
+
+  const handleSubmit = async () => {
+    if (!teacherId || !subjectId || !classId) {
+      setError("All fields are required");
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const yearRes = await api.get("/academic/years/active");
+      if (!yearRes.data?.id) {
+        setError("No active academic year found. Set one up first.");
+        return;
+      }
+      await api.post("/academic/assignments", {
+        teacherId,
+        subjectId,
+        classSectionId: classId,
+        academicYearId: yearRes.data.id,
+      });
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to create assignment");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[350] flex items-center justify-center p-6">
+      <div
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8"
+      >
+        <h3 className="text-lg font-black text-slate-900 mb-1">
+          Assign Subject to Teacher
+        </h3>
+        <p className="text-xs text-slate-400 mb-6">
+          Subjects shown are from{" "}
+          <span className="font-bold text-slate-600">{department.name}</span>{" "}
+          department only
+        </p>
+
+        {error && (
+          <div className="bg-rose-50 text-rose-600 p-3 rounded-2xl text-sm mb-4 flex items-center gap-2">
+            <AlertCircle size={14} />
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* Teacher picker */}
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Staff Member *
+            </label>
+            {eligibleStaff.length === 0 ? (
+              <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs font-bold text-amber-700">
+                No staff assigned to this department yet. Assign staff first.
+              </div>
+            ) : (
+              <select
+                value={teacherId}
+                onChange={(e) => setTeacherId(e.target.value)}
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-500"
+              >
+                <option value="">Select staff member...</option>
+                {eligibleStaff.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.firstName} {s.lastName} ({s.user.role.replace("_", " ")})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Subject picker — only dept subjects */}
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Subject *
+            </label>
+            {roster.department.subjects.length === 0 ? (
+              <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs font-bold text-amber-700">
+                No subjects in this department yet. Add subjects first.
+              </div>
+            ) : (
+              <select
+                value={subjectId}
+                onChange={(e) => setSubjectId(e.target.value)}
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-500"
+              >
+                {roster.department.subjects.map((s: any) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.type})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Class picker — all classes */}
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Class Section *
+            </label>
+            <select
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-500"
+            >
+              {allClasses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.level.replace("FORM_", "Form ")} {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-8">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 bg-slate-50 rounded-xl text-xs font-black uppercase tracking-widest"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={
+              isLoading ||
+              eligibleStaff.length === 0 ||
+              roster.department.subjects.length === 0
+            }
+            className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Plus size={14} />
+            )}
+            Assign
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 // ─── Create Department Modal ───────────────────────────────────────────────────
 
@@ -428,7 +605,7 @@ const CreateClassModal: React.FC<{
   );
 };
 
-// ─── Assign Staff Modal (HOD or Teacher or headmaster) ───────────────────────────────────────
+// ─── Assign Staff Modal (HOD or Teacher or headmaster) ─────────────────────────
 
 const AssignStaffModal: React.FC<{
   department: Department;
@@ -437,7 +614,9 @@ const AssignStaffModal: React.FC<{
   onSuccess: () => void;
 }> = ({ department, allStaff, onClose, onSuccess }) => {
   const [staffId, setStaffId] = React.useState("");
-const [role, setRole] = React.useState<'HOD' | 'TEACHER' | 'HEADMASTER'>('TEACHER');
+  const [role, setRole] = React.useState<"HOD" | "TEACHER" | "HEADMASTER">(
+    "TEACHER",
+  );
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState("");
@@ -506,15 +685,26 @@ const [role, setRole] = React.useState<'HOD' | 'TEACHER' | 'HEADMASTER'>('TEACHE
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
               Assign as
             </label>
-            {/**role picker */}
             <div className="flex bg-slate-100 p-1 rounded-xl">
-  {(['TEACHER', 'HOD', 'HEADMASTER'] as const).map(r => (
-    <button key={r} onClick={() => setRole(r)}
-      className={cn('flex-1 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all', role === r ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400')}>
-      {r === 'HOD' ? 'HOD' : r === 'HEADMASTER' ? 'Headmaster' : 'Teacher'}
-    </button>
-  ))}
-</div>
+              {(["TEACHER", "HOD", "HEADMASTER"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRole(r)}
+                  className={cn(
+                    "flex-1 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
+                    role === r
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-400",
+                  )}
+                >
+                  {r === "HOD"
+                    ? "HOD"
+                    : r === "HEADMASTER"
+                      ? "Headmaster"
+                      : "Teacher"}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -621,7 +811,13 @@ export function AcademicSetup() {
   const [showCreateSubject, setShowCreateSubject] = React.useState(false);
   const [showCreateClass, setShowCreateClass] = React.useState(false);
   const [showAssignStaff, setShowAssignStaff] = React.useState(false);
-
+  const [showAssignSubjectToTeacher, setShowAssignSubjectToTeacher] =
+    React.useState(false);
+  const [toastMsg, setToastMsg] = React.useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
@@ -644,7 +840,7 @@ export function AcademicSetup() {
     fetchData();
   }, [fetchData]);
 
-  const openDeptDetail = async (dept: Department) => {
+  const openDeptDetail = React.useCallback(async (dept: Department) => {
     setSelectedDept(dept);
     setIsLoadingRoster(true);
     try {
@@ -655,12 +851,14 @@ export function AcademicSetup() {
     } finally {
       setIsLoadingRoster(false);
     }
-  };
+  }, []);
 
-  const refreshRoster = async () => {
-    if (selectedDept) await openDeptDetail(selectedDept);
+  const refreshRoster = React.useCallback(async () => {
+    if (selectedDept) {
+      await openDeptDetail(selectedDept);
+    }
     await fetchData();
-  };
+  }, [selectedDept, openDeptDetail, fetchData]);
 
   const handleAssignClassTeacher = async (classId: string, staffId: string) => {
     try {
@@ -670,6 +868,40 @@ export function AcademicSetup() {
       alert(err.response?.data?.message || "Failed to assign class teacher");
     }
   };
+
+  // ─── Delete handlers ────────────────────────────────────────────────────────
+
+  const handleDeleteDepartment = async (id: string) => {
+    if (!window.confirm("Delete this department?")) return;
+    try {
+      await api.delete(`/academic/departments/${id}`);
+      await fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to delete department");
+    }
+  };
+
+  const handleDeleteClass = async (id: string) => {
+    if (!window.confirm("Delete this class?")) return;
+    try {
+      await api.delete(`/academic/classes/${id}`);
+      await fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to delete class");
+    }
+  };
+
+  const handleDeleteSubject = async (id: string) => {
+    if (!window.confirm("Delete this subject?")) return;
+    try {
+      await api.delete(`/academic/subjects/${id}`);
+      await refreshRoster();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to delete subject");
+    }
+  };
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -759,8 +991,20 @@ export function AcademicSetup() {
                 <button
                   key={dept.id}
                   onClick={() => openDeptDetail(dept)}
-                  className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all text-left group"
+                  className="relative bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all text-left group"
                 >
+                  {/* ✨ Delete button – appears on hover */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteDepartment(dept.id);
+                    }}
+                    className="absolute top-3 right-3 p-2 rounded-xl text-slate-300 hover:bg-rose-50 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100"
+                    title="Delete department"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Building2 size={22} />
@@ -773,7 +1017,6 @@ export function AcademicSetup() {
                     {dept.name}
                   </h3>
 
-                  {/** deaprtment card to show staff count */}
                   {dept.description && (
                     <p className="text-xs text-slate-400 mb-4 line-clamp-2">
                       {dept.description}
@@ -831,7 +1074,9 @@ export function AcademicSetup() {
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     Class Teacher
                   </th>
-                  <th className="px-6 py-4"></th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -870,8 +1115,18 @@ export function AcademicSetup() {
                           ))}
                       </select>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <ChevronRight size={16} className="text-slate-300" />
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* ✨ Delete button */}
+                        <button
+                          onClick={() => handleDeleteClass(cls.id)}
+                          className="p-2 rounded-xl text-slate-300 hover:bg-rose-50 hover:text-rose-600 transition-all"
+                          title="Delete class"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <ChevronRight size={16} className="text-slate-300" />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -945,12 +1200,20 @@ export function AcademicSetup() {
                       <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
                         Courses / Subjects
                       </h4>
-                      <button
-                        onClick={() => setShowCreateSubject(true)}
-                        className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline"
-                      >
-                        + Add Subject
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setShowAssignSubjectToTeacher(true)}
+                          className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+                        >
+                          + Assign to Teacher
+                        </button>
+                        <button
+                          onClick={() => setShowCreateSubject(true)}
+                          className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline"
+                        >
+                          + Add Subject
+                        </button>
+                      </div>
                     </div>
                     {roster.department.subjects.length === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-6 bg-slate-50 rounded-2xl">
@@ -961,46 +1224,140 @@ export function AcademicSetup() {
                         {roster.department.subjects.map((s: any) => (
                           <div
                             key={s.id}
-                            className="flex items-center justify-between p-3 bg-slate-50 rounded-xl"
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-xl group"
                           >
                             <span className="text-sm font-bold text-slate-900">
                               {s.name}
                             </span>
-                            <span
-                              className={cn(
-                                "text-[9px] font-black px-2 py-1 rounded-md uppercase",
-                                s.type === "CORE"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-indigo-100 text-indigo-700",
-                              )}
-                            >
-                              {s.type}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "text-[9px] font-black px-2 py-1 rounded-md uppercase",
+                                  s.type === "CORE"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-indigo-100 text-indigo-700",
+                                )}
+                              >
+                                {s.type}
+                              </span>
+                              {/* ✨ Delete subject button */}
+                              <button
+                                onClick={() => handleDeleteSubject(s.id)}
+                                className="p-1.5 rounded-lg text-slate-300 hover:bg-rose-50 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100"
+                                title="Delete subject"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </section>
+                  {/* Current teaching assignments */}
+                  {roster.teachers.length > 0 || roster.hods.length > 0 ? (
+                    <section>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
+                          Subject Assignments
+                        </h4>
+                      </div>
+                      <div className="space-y-2">
+                        {[...roster.hods, ...roster.teachers].flatMap(
+                          (staffMember) =>
+                            (staffMember.teachingAssignments ?? [])
+                              .filter((a: any) =>
+                                roster.department.subjects.some(
+                                  (s: any) => s.id === a.subject?.id,
+                                ),
+                              )
+                              .map((a: any) => (
+                                <div
+                                  key={a.id}
+                                  className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100"
+                                >
+                                  <div>
+                                    <p className="text-[12px] font-black text-slate-900">
+                                      {a.subject?.name}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase">
+                                      {staffMember.firstName}{" "}
+                                      {staffMember.lastName} ·{" "}
+                                      {a.classSection?.level?.replace(
+                                        "FORM_",
+                                        "Form ",
+                                      )}{" "}
+                                      {a.classSection?.name}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={async () => {
+                                      if (
+                                        !window.confirm(
+                                          "Remove this assignment?",
+                                        )
+                                      )
+                                        return;
+                                      try {
+                                        await api.delete(
+                                          `/academic/assignments/${a.id}`,
+                                        );
+                                        showToast("Assignment removed");
+                                        await refreshRoster();
+                                      } catch (err: any) {
+                                        alert(
+                                          err.response?.data?.message ||
+                                            "Failed to remove",
+                                        );
+                                      }
+                                    }}
+                                    className="p-1.5 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-all"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              )),
+                        )}
+                        {[...roster.hods, ...roster.teachers].flatMap(
+                          (s) => s.teachingAssignments ?? [],
+                        ).length === 0 && (
+                          <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-2xl">
+                            No subject assignments yet in this department
+                          </p>
+                        )}
+                      </div>
+                    </section>
+                  ) : null}
 
                   {/* Headmasters */}
-{roster.headmasters.length > 0 && (
-  <section>
-    <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] mb-4">Headmaster / Admin</h4>
-    <div className="space-y-2">
-      {roster.headmasters.map(h => (
-        <div key={h.id} className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-100 rounded-xl">
-          <div className="w-9 h-9 bg-purple-100 text-purple-700 rounded-xl flex items-center justify-center text-xs font-black">
-            {h.firstName[0]}{h.lastName[0]}
-          </div>
-          <div>
-            <p className="text-sm font-black text-slate-900">{h.firstName} {h.lastName}</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase">{h.staffId} · {h.user.role.replace('_', ' ')}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </section>
-)}
+                  {roster.headmasters.length > 0 && (
+                    <section>
+                      <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] mb-4">
+                        Headmaster / Admin
+                      </h4>
+                      <div className="space-y-2">
+                        {roster.headmasters.map((h) => (
+                          <div
+                            key={h.id}
+                            className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-100 rounded-xl"
+                          >
+                            <div className="w-9 h-9 bg-purple-100 text-purple-700 rounded-xl flex items-center justify-center text-xs font-black">
+                              {h.firstName[0]}
+                              {h.lastName[0]}
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-slate-900">
+                                {h.firstName} {h.lastName}
+                              </p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase">
+                                {h.staffId} · {h.user.role.replace("_", " ")}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
 
                   {/* HODs */}
                   <section>
@@ -1089,6 +1446,37 @@ export function AcademicSetup() {
               ) : null}
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            className="fixed top-6 right-6 z-[400] bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3"
+          >
+            <CheckCircle2 size={16} />
+            <span className="text-sm font-bold">{toastMsg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Assign Subject to Teacher modal */}
+      <AnimatePresence>
+        {showAssignSubjectToTeacher && selectedDept && roster && (
+          <AssignSubjectToTeacherModal
+            department={selectedDept}
+            roster={roster}
+            allClasses={classes}
+            onClose={() => setShowAssignSubjectToTeacher(false)}
+            onSuccess={() => {
+              showToast("Subject assigned successfully");
+              refreshRoster();
+            }}
+          />
         )}
       </AnimatePresence>
 
