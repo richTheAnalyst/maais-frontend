@@ -186,7 +186,7 @@ function AppContent() {
                   <StudentTimetable />
                 ) : user?.role === "SUPER_ADMIN" ||
                   user?.role === "HEADMASTER" ? (
-                  <SchedulingView />
+                 <Timetable />
                 ) : (
                   <Timetable />
                 )

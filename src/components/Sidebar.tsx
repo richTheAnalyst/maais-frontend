@@ -87,13 +87,14 @@ export function Sidebar() {
     // 4. SCHEDULING & TIMETABLE
     { 
       icon: Clock, 
-      label: 'Scheduling', 
+      label: 'Timetable', 
       id: 'scheduling', 
-      roles: ['SUPER_ADMIN', 'HEADMASTER', 'TEACHER'],
-      subItems: [
+      roles: ['SUPER_ADMIN', 'HEADMASTER', 'TEACHER', 'HOD'],
+      path: '/timetable'
+      /* subItems: [
         { label: 'Master Timetable', path: '/timetable' },
         { label: 'Event Calendar', path: '/timetable' }
-      ]
+      ] */
     },
 
     {
@@ -125,19 +126,20 @@ export function Sidebar() {
       roles: ['SUPER_ADMIN', 'HEADMASTER']
     },
  */
-    // 7. SYSTEM SETTINGS (The "Vault")
-   /*  { 
+    // 7. SYSTEM Settings (The "Vault")
+    { 
       icon: ShieldCheck, 
       label: 'Vault', 
       id: 'vault', 
       roles: ['SUPER_ADMIN', 'HEADMASTER'],
       subItems: [
-        { label: 'User Permissions', path: '/system' },
+        //{ label: 'User Permissions', path: '/system' },
+        { label: 'Audit Logs', path: '/audit' },
         { label: 'Academic Archive', path: '/archive' },
-        { label: 'System Forensics', path: '/audit/extended' },
-        { label: 'Academic Audit', path: '/audit' }
+        //{ label: 'System Forensics', path: '/audit/extended' },
+        
       ]
-    }, */
+    },
 
     // FALLBACKS FOR OTHER ROLES (TEACHERS, HODs, STUDENTS)
 /*     { icon: Calendar, label: 'Timetable', id: 'timetable', path: '/timetable', roles: ['TEACHER', 'STUDENT', 'SUPER_ADMIN'] },
@@ -145,8 +147,8 @@ export function Sidebar() {
  *//*     { icon: ClipboardCheck, label: 'Missing Observations', id: 'missing-obs', path: '/missing-observations', roles: ['TEACHER', 'HOD', 'SUPER_ADMIN'], badge: 5, badgeColor: 'bg-amber-500' },
  */    { icon: GraduationCap, label: 'Grading', id: 'grading', path: '/grading', roles: ['TEACHER', 'HOD'] },
     { icon: TrendingUp, label: 'Analytics', id: 'analytics', path: '/analytics', roles: ['TEACHER', 'HOD'] },
-    { icon: Database, label: 'Archive', id: 'archive', path: '/archive', roles: ['SUPER_ADMIN', 'HEADMASTER', 'HOD'] },
-/*     { icon: ShieldCheck, label: 'Certification', id: 'certification', path: '/certification', roles: ['HOD'], badge: 2, badgeColor: 'bg-emerald-600' },
+/*     { icon: Database, label: 'Archive', id: 'archive', path: '/archive', roles: ['SUPER_ADMIN', 'HEADMASTER', 'HOD'] },
+ *//*     { icon: ShieldCheck, label: 'Certification', id: 'certification', path: '/certification', roles: ['HOD'], badge: 2, badgeColor: 'bg-emerald-600' },
  */    { icon: TrendingUp, label: 'Journey', id: 'journey', path: '/journey', roles: ['STUDENT'] },
   ];
 
