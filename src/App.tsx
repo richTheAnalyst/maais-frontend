@@ -101,6 +101,8 @@ import { ExtendedLogsView } from "./views/ExtendedLogsView";
 import { AdminSettings } from "./views/AdminSettings";
 import { AdminSupport } from "./views/AdminSupport";
 import Login from "./views/Login";
+import { HODDashboard } from "./views/HODDashboard";
+import { TeacherDashboard } from "./views/TeacherDashboard";
 
 function AppContent() {
   const location = useLocation();
@@ -173,6 +175,8 @@ function AppContent() {
         {location.pathname !== "/journey-audit" && <Topbar />}
         <main className="flex-1 flex overflow-hidden relative">
           <Routes>
+            <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
+<Route path="/dashboard/hod" element={<HODDashboard />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/revisions" element={<RevisionsFeed />} />
             <Route

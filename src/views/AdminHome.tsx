@@ -922,9 +922,6 @@ export function AdminHome() {
               <h3 className="text-2xl font-black italic font-display text-slate-900 mb-2">
                 Register New Node
               </h3>
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-8">
-                Institutional Identity Provisioning
-              </p>
               <div className="grid grid-cols-1 gap-4">
                 {[
                   {

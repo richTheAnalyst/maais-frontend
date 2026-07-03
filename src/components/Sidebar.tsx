@@ -63,19 +63,6 @@ export function Sidebar() {
       ]
     },
 
-    // 3. ACADEMIC ARCHITECT (The Engine Room)
-    /* { 
-      icon: Cpu, 
-      label: 'Engine Room', 
-      id: 'architect', 
-      roles: ['SUPER_ADMIN', 'HEADMASTER'],
-      subItems: [
-        { label: 'Class/Form Manager', path: '/identity/departments' },
-        { label: 'Subject Curriculum', path: '/academic-architect' },
-        { label: 'Grading Rules', path: '/grading' }
-      ]
-    }, */
-
     {
       icon: Cpu,
       label: 'Academic Setup',
@@ -91,10 +78,6 @@ export function Sidebar() {
       id: 'scheduling', 
       roles: ['SUPER_ADMIN', 'HEADMASTER', 'TEACHER', 'HOD'],
       path: '/timetable'
-      /* subItems: [
-        { label: 'Master Timetable', path: '/timetable' },
-        { label: 'Event Calendar', path: '/timetable' }
-      ] */
     },
 
     {
@@ -108,24 +91,6 @@ export function Sidebar() {
   ]
 },
 
-    // 5. FINANCE & PROCUREMENT
-    /* { 
-      icon: Wallet, 
-      label: 'Finance', 
-      id: 'finance', 
-      path: '/finance',
-      roles: ['SUPER_ADMIN', 'HEADMASTER']
-    }, */
-
-    // 6. COMMUNICATIONS & REPORTS
-    /* { 
-      icon: MessageSquare, 
-      label: 'Comms', 
-      id: 'comms', 
-      path: '/comms',
-      roles: ['SUPER_ADMIN', 'HEADMASTER']
-    },
- */
     // 7. SYSTEM Settings (The "Vault")
     { 
       icon: ShieldCheck, 
