@@ -77,7 +77,9 @@ function getWAECGrade(score: number): string {
   return "F9";
 }
 
-type ArchiveSubTab = "VAULT" | "PROMOTION" | "MAINTENANCE";
+type ArchiveSubTab = "VAULT" | "PROMOTION";
+type VaultView = 'active' | 'alumni';
+
 
 export function ArchiveView() {
   const [activeSubTab, setActiveSubTab] =
@@ -109,6 +111,8 @@ export function ArchiveView() {
   const [showUnlockConfirm, setShowUnlockConfirm] = React.useState<any>(null);
   const [unlockReason, setUnlockReason] = React.useState("");
   const [isUnlocking, setIsUnlocking] = React.useState(false);
+  const [vaultView, setVaultView] = React.useState<VaultView>('active');
+
 
   //functions
 
@@ -135,19 +139,32 @@ export function ArchiveView() {
     }
   };
   const fetchVault = React.useCallback(async () => {
-    setIsLoadingVault(true);
-    try {
-      const res = await api.get("/archive/vault/search", {
-        params: searchTerm ? { indexNumber: searchTerm } : {},
-      });
-      setVaultStudents(res.data);
-    } catch (err) {
-      console.error("Vault search failed", err);
-      setVaultStudents([]);
-    } finally {
-      setIsLoadingVault(false);
+  setIsLoadingVault(true);
+  try {
+    const params: any = {};
+    if (searchTerm) {
+      // Try as index number first, then as name
+      if (/^\d/.test(searchTerm)) {
+        params.indexNumber = searchTerm;
+      } else {
+        const parts = searchTerm.trim().split(' ');
+        params.firstName = parts[0];
+        if (parts[1]) params.lastName = parts[1];
+      }
     }
-  }, [searchTerm]);
+    const res = await api.get('/archive/vault/search', { params });
+    // Split by archived status
+    const all = res.data;
+    const active = all.filter((s: any) => !s.archivedAt);
+    const alumni = all.filter((s: any) => !!s.archivedAt);
+    setVaultStudents(vaultView === 'active' ? active : alumni);
+  } catch (err) {
+    console.error('Vault search failed', err);
+    setVaultStudents([]);
+  } finally {
+    setIsLoadingVault(false);
+  }
+}, [searchTerm, vaultView]);
 
   React.useEffect(() => {
     if (activeSubTab === "VAULT" && !selectedStudent) {
@@ -255,25 +272,17 @@ export function ArchiveView() {
           </span>
         </div>
         <div className="flex bg-slate-100 p-1 rounded-xl">
-          {[
-            { id: "VAULT", label: "The Vault", icon: Database },
-            { id: "PROMOTION", label: "Promotion Cycle", icon: GraduationCap },
-            { id: "MAINTENANCE", label: "Maintenance", icon: RefreshCw },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSubTab(tab.id as ArchiveSubTab)}
-              className={cn(
-                "flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                activeSubTab === tab.id
-                  ? "bg-white text-emerald-900 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600",
-              )}
-            >
-              <tab.icon size={12} />
-              {tab.label}
-            </button>
-          ))}
+         {[
+  { id: 'VAULT', label: 'The Vault', icon: Database },
+  { id: 'PROMOTION', label: 'Promotion Cycle', icon: GraduationCap },
+].map(tab => (
+  <button key={tab.id} onClick={() => setActiveSubTab(tab.id as ArchiveSubTab)}
+    className={cn('flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all',
+      activeSubTab === tab.id ? 'bg-white text-emerald-900 shadow-sm' : 'text-slate-400 hover:text-slate-600')}>
+    <tab.icon size={12} />
+    {tab.label}
+  </button>
+))}
         </div>
       </div>
 
@@ -756,63 +765,6 @@ export function ArchiveView() {
             </motion.div>
           )}
 
-          {activeSubTab === "MAINTENANCE" && (
-            <motion.div
-              key="maintenance"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex-1 p-10"
-            >
-              <div className="max-w-4xl mx-auto space-y-8">
-                <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm">
-                  <h3 className="text-xl font-black italic font-display text-slate-900 mb-8 font-sans">
-                    Database Maintenance & Safety
-                  </h3>
-
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white">
-                          <RefreshCw size={18} />
-                        </div>
-                        <div>
-                          <p className="text-[12px] font-black text-slate-900 tracking-tight">
-                            Regenerate Audit Hashes
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            Ensures data integrity for all archived terms
-                          </p>
-                        </div>
-                      </div>
-                      <button className="px-4 py-2 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">
-                        Execute
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-rose-500 rounded-xl flex items-center justify-center text-white">
-                          <Trash2 size={18} />
-                        </div>
-                        <div>
-                          <p className="text-[12px] font-black text-slate-900 tracking-tight">
-                            Purge Orphaned Records
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            Deletes data for students not linked to any form
-                          </p>
-                        </div>
-                      </div>
-                      <button className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all">
-                        Deep Clean
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
 
           {activeSubTab === "VAULT" && !selectedStudent && (
             <motion.div
@@ -822,74 +774,67 @@ export function ArchiveView() {
               exit={{ opacity: 0, y: -10 }}
               className="flex-1 flex flex-col min-w-0"
             >
-              <header className="p-8 border-b border-gray-200 bg-white/40 backdrop-blur-xl shrink-0">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-emerald-900 rounded-2xl flex items-center justify-center text-emerald-100 shadow-2xl border border-emerald-800 rotate-3">
-                      <Database size={32} />
-                    </div>
-                    <div>
-                      <h1 className="text-3xl font-black text-gray-900 tracking-tighter">
-                        The Vault
-                      </h1>
-                      <div className="flex items-center gap-3">
-                        <p className="text-xs font-black text-emerald-800 uppercase tracking-widest bg-emerald-100/50 px-2 py-0.5 rounded">
-                          Historical Archive v4.2
-                        </p>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                          Last Synced: Today 04:12 AM
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+             <header className="p-8 border-b border-gray-200 bg-white/40 backdrop-blur-xl shrink-0">
+  <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center gap-4">
+      <div className="w-14 h-14 bg-emerald-900 rounded-2xl flex items-center justify-center text-emerald-100 shadow-2xl border border-emerald-800 rotate-3">
+        <Database size={32} />
+      </div>
+      <div>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tighter">The Vault</h1>
+        <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest bg-emerald-100/50 px-2 py-0.5 rounded mt-1">
+          Academic Archive System
+        </p>
+      </div>
+    </div>
+    <button className="px-6 py-3 bg-emerald-900 text-white rounded-xl font-black text-sm hover:bg-emerald-950 transition-all shadow-xl flex items-center gap-2">
+      <FileText size={18} /> Bulk Progress Report
+    </button>
+  </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200 shadow-inner">
-                      <button
-                        onClick={() => setShowCoreComparison(false)}
-                        className={cn(
-                          "px-4 py-2 rounded-lg text-xs font-black transition-all",
-                          !showCoreComparison
-                            ? "bg-white text-emerald-900 shadow-sm"
-                            : "text-gray-400 hover:text-gray-600",
-                        )}
-                      >
-                        Expert View
-                      </button>
-                    </div>
-                    <button className="px-6 py-3 bg-emerald-900 text-white rounded-xl font-black text-sm hover:bg-emerald-950 transition-all shadow-xl shadow-emerald-900/20 flex items-center gap-2">
-                      <FileText size={18} />
-                      Bulk Progress Report
-                    </button>
-                  </div>
-                </div>
+  {/* Active vs Alumni toggle */}
+  <div className="flex items-center gap-4 mb-6">
+    <div className="flex bg-slate-100 p-1 rounded-xl">
+      <button onClick={() => setVaultView('active')}
+        className={cn('px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all',
+          vaultView === 'active' ? 'bg-white text-emerald-900 shadow-sm' : 'text-slate-400')}>
+        Active Students
+      </button>
+      <button onClick={() => setVaultView('alumni')}
+        className={cn('px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2',
+          vaultView === 'alumni' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-400')}>
+        <GraduationCap size={12} /> Alumni
+      </button>
+    </div>
 
-                <div className="flex flex-wrap gap-4 items-center">
-                  <div className="flex flex-wrap gap-4 items-center">
-                    <div className="flex-1 min-w-[300px] relative h-12">
-                      <Search
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                        size={18}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Lookup by index number, first or last name..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm h-full"
-                      />
-                    </div>
-                    <button
-                      onClick={fetchVault}
-                      className="px-6 py-3 bg-white border border-gray-200 text-gray-600 rounded-2xl font-black text-xs hover:bg-gray-50 transition-all flex items-center gap-2"
-                    >
-                      <RefreshCw size={16} />
-                      Refresh
-                    </button>
-                  </div>
-                </div>
-              </header>
+    <div className="flex-1 relative h-11">
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+      <input type="text" placeholder={vaultView === 'active' ? 'Search active students...' : 'Search alumni...'}
+        value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+        className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/10 shadow-sm h-full" />
+    </div>
+    <button onClick={fetchVault} className="px-5 py-3 bg-white border border-gray-200 text-gray-600 rounded-2xl font-black text-xs hover:bg-gray-50 flex items-center gap-2">
+      <RefreshCw size={14} /> Refresh
+    </button>
+  </div>
+
+  {/* Context banner */}
+  {vaultView === 'alumni' ? (
+    <div className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-100 rounded-2xl">
+      <GraduationCap size={16} className="text-purple-600" />
+      <p className="text-xs font-bold text-purple-700">
+        Showing graduated/archived students. These records are read-only and preserved for transcript generation.
+      </p>
+    </div>
+  ) : (
+    <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
+      <Users size={16} className="text-emerald-600" />
+      <p className="text-xs font-bold text-emerald-700">
+        Showing currently enrolled students across all form levels.
+      </p>
+    </div>
+  )}
+</header>
 
               {/* Comparison Grid */}
               <div className="flex-1 overflow-x-auto p-8 pt-4">

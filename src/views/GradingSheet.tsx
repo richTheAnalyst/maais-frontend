@@ -208,7 +208,6 @@ export function GradingSheet() {
     }
   };
 
-  
   const [showSTPOverlay, setShowSTPOverlay] = React.useState(false);
   const [showAuditToast, setShowAuditToast] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -216,170 +215,172 @@ export function GradingSheet() {
   const [teacherAssignments, setTeacherAssignments] = React.useState<any[]>([]);
 
   const availableSubjectsForClass = React.useMemo(() => {
-  if (user?.role !== 'TEACHER' || teacherAssignments.length === 0) return subjects;
-  const subjectIdsForClass = teacherAssignments
-    .filter(a => a.classSectionId === selectedClassId)
-    .map(a => a.subjectId);
-  return subjects.filter(s => subjectIdsForClass.includes(s.id));
-}, [selectedClassId, teacherAssignments, subjects, user?.role]);
+    if (user?.role !== "TEACHER" || teacherAssignments.length === 0)
+      return subjects;
+    const subjectIdsForClass = teacherAssignments
+      .filter((a) => a.classSectionId === selectedClassId)
+      .map((a) => a.subjectId);
+    return subjects.filter((s) => subjectIdsForClass.includes(s.id));
+  }, [selectedClassId, teacherAssignments, subjects, user?.role]);
   // ─── Load setup data ────────────────────────────────────────────────────────
- React.useEffect(() => {
-  async function loadSetup() {
-    setIsLoadingSetup(true);
-    try {
-      const [scopeRes, yearRes] = await Promise.all([
-        api.get('/academic/my-grading-scope'),
-        api.get('/academic/years/active'),
-      ]);
+  React.useEffect(() => {
+    async function loadSetup() {
+      setIsLoadingSetup(true);
+      try {
+        const [scopeRes, yearRes] = await Promise.all([
+          api.get("/academic/my-grading-scope"),
+          api.get("/academic/years/active"),
+        ]);
 
-      const scope = scopeRes.data;
+        const scope = scopeRes.data;
 
-      if (scope.role === 'TEACHER') {
-        // Teacher: build unique class list and subject list from their assignments
-        const uniqueClasses: ClassSection[] = [];
-        const uniqueSubjects: Subject[] = [];
-        const seenClasses = new Set<string>();
-        const seenSubjects = new Set<string>();
+        if (scope.role === "TEACHER") {
+          // Teacher: build unique class list and subject list from their assignments
+          const uniqueClasses: ClassSection[] = [];
+          const uniqueSubjects: Subject[] = [];
+          const seenClasses = new Set<string>();
+          const seenSubjects = new Set<string>();
 
-        scope.assignments.forEach((a: any) => {
-          if (!seenClasses.has(a.classSectionId)) {
-            seenClasses.add(a.classSectionId);
-            uniqueClasses.push({ id: a.classSectionId, name: a.className, level: a.classLevel });
+          scope.assignments.forEach((a: any) => {
+            if (!seenClasses.has(a.classSectionId)) {
+              seenClasses.add(a.classSectionId);
+              uniqueClasses.push({
+                id: a.classSectionId,
+                name: a.className,
+                level: a.classLevel,
+              });
+            }
+            if (!seenSubjects.has(a.subjectId)) {
+              seenSubjects.add(a.subjectId);
+              uniqueSubjects.push({
+                id: a.subjectId,
+                name: a.subjectName,
+                code: a.subjectCode,
+                type: a.subjectType,
+              });
+            }
+          });
+
+          setClasses(uniqueClasses);
+          setSubjects(uniqueSubjects);
+
+          // Pre-select first assignment
+          if (scope.assignments.length > 0) {
+            setSelectedClassId(scope.assignments[0].classSectionId);
+            setSelectedSubjectId(scope.assignments[0].subjectId);
           }
-          if (!seenSubjects.has(a.subjectId)) {
-            seenSubjects.add(a.subjectId);
-            uniqueSubjects.push({ id: a.subjectId, name: a.subjectName, code: a.subjectCode, type: a.subjectType });
-          }
-        });
 
-        setClasses(uniqueClasses);
-        setSubjects(uniqueSubjects);
+          // Store assignments for subject-class pair enforcement on the frontend too
+          setTeacherAssignments(scope.assignments);
+        } else if (scope.role === "HOD") {
+          // HOD: department subjects only, all classes
+          setSubjects(
+            scope.subjects.map((s: any) => ({
+              id: s.subjectId,
+              name: s.subjectName,
+              code: s.subjectCode,
+              type: s.subjectType,
+            })),
+          );
+          setClasses(
+            scope.classes.map((c: any) => ({
+              id: c.classSectionId,
+              name: c.className,
+              level: c.classLevel,
+            })),
+          );
 
-        // Pre-select first assignment
-        if (scope.assignments.length > 0) {
-          setSelectedClassId(scope.assignments[0].classSectionId);
-          setSelectedSubjectId(scope.assignments[0].subjectId);
+          if (scope.subjects.length > 0)
+            setSelectedSubjectId(scope.subjects[0].subjectId);
+          if (scope.classes.length > 0)
+            setSelectedClassId(scope.classes[0].classSectionId);
+        } else {
+          // Admin/Headmaster: all subjects and classes (existing behaviour)
+          setSubjects(
+            scope.subjects.map((s: any) => ({
+              id: s.subjectId,
+              name: s.subjectName,
+              code: s.subjectCode,
+              type: s.subjectType,
+            })),
+          );
+          setClasses(
+            scope.classes.map((c: any) => ({
+              id: c.classSectionId,
+              name: c.className,
+              level: c.classLevel,
+            })),
+          );
+
+          if (scope.subjects.length > 0)
+            setSelectedSubjectId(scope.subjects[0].subjectId);
+          if (scope.classes.length > 0)
+            setSelectedClassId(scope.classes[0].classSectionId);
         }
 
-        // Store assignments for subject-class pair enforcement on the frontend too
-        setTeacherAssignments(scope.assignments);
-      } else if (scope.role === 'HOD') {
-        // HOD: department subjects only, all classes
-        setSubjects(scope.subjects.map((s: any) => ({
-          id: s.subjectId, name: s.subjectName, code: s.subjectCode, type: s.subjectType,
-        })));
-        setClasses(scope.classes.map((c: any) => ({
-          id: c.classSectionId, name: c.className, level: c.classLevel,
-        })));
-
-        if (scope.subjects.length > 0) setSelectedSubjectId(scope.subjects[0].subjectId);
-        if (scope.classes.length > 0) setSelectedClassId(scope.classes[0].classSectionId);
-      } else {
-        // Admin/Headmaster: all subjects and classes (existing behaviour)
-        setSubjects(scope.subjects.map((s: any) => ({
-          id: s.subjectId, name: s.subjectName, code: s.subjectCode, type: s.subjectType,
-        })));
-        setClasses(scope.classes.map((c: any) => ({
-          id: c.classSectionId, name: c.className, level: c.classLevel,
-        })));
-
-        if (scope.subjects.length > 0) setSelectedSubjectId(scope.subjects[0].subjectId);
-        if (scope.classes.length > 0) setSelectedClassId(scope.classes[0].classSectionId);
-      }
-
-      const terms: Term[] = yearRes.data?.terms ?? [];
-      const active = terms.find((t: Term) => t.isActive);
-      if (active) {
-        setActiveTerm({ ...active, academicYear: { label: yearRes.data.label } });
-      }
-    } catch {
-      setError('Failed to load grading setup');
-    } finally {
-      setIsLoadingSetup(false);
-    }
-  }
-  loadSetup();
-}, []);
-
-  // ─── Load students when class/subject selected ──────────────────────────────
-  React.useEffect(() => {
-    if (!selectedClassId || !selectedSubjectId || !activeTerm) return;
-
-    async function loadStudents() {
-      setIsLoadingStudents(true);
-      try {
-        const res = await api.get(`/users/students?classId=${selectedClassId}`);
-        const studentList: Student[] = res.data;
-        setStudents(studentList);
-
-        // Initialize grade rows
-        const rows: Record<string, GradeRow> = {};
-        await Promise.all(
-          studentList.map(async (s) => {
-            try {
-              const gradesRes = await api.get(
-                `/grading/students/${s.id}/terms/${activeTerm.id}`,
-              );
-              const existing = gradesRes.data.find(
-                (g: any) => g.subjectId === selectedSubjectId,
-              );
-              if (existing) {
-                rows[s.id] = {
-                  studentId: s.id,
-                  subjectId: selectedSubjectId,
-                  termId: activeTerm.id,
-                  classScore: existing.classScore ?? 0,
-                  examScore: existing.examScore ?? 0,
-                  totalScore: existing.totalScore ?? 0,
-                  grade: existing.grade ?? "",
-                  remark: existing.remark ?? "",
-                  hasObservation: existing.hasObservation ?? false,
-                  observationText: existing.observationText ?? "",
-                  isLocked: existing.isLocked ?? false,
-                  isApproved: existing.isApproved ?? false,
-                  entryId: existing.id,
-                };
-              } else {
-                rows[s.id] = {
-                  studentId: s.id,
-                  subjectId: selectedSubjectId,
-                  termId: activeTerm.id,
-                  classScore: 0,
-                  examScore: 0,
-                  totalScore: 0,
-                  grade: "",
-                  remark: "",
-                  hasObservation: false,
-                  observationText: "",
-                  isLocked: false,
-                  isApproved: false,
-                };
-              }
-            } catch {
-              rows[s.id] = {
-                studentId: s.id,
-                subjectId: selectedSubjectId,
-                termId: activeTerm.id,
-                classScore: 0,
-                examScore: 0,
-                totalScore: 0,
-                grade: "",
-                remark: "",
-                hasObservation: false,
-                observationText: "",
-                isLocked: false,
-                isApproved: false,
-              };
-            }
-          }),
-        );
-        setGradeRows(rows);
-
-        if (studentList.length > 0) {
-          setSelectedStudentId(studentList[0].id);
+        const terms: Term[] = yearRes.data?.terms ?? [];
+        const active = terms.find((t: Term) => t.isActive);
+        if (active) {
+          setActiveTerm({
+            ...active,
+            academicYear: { label: yearRes.data.label },
+          });
         }
       } catch {
-        setError("Failed to load students");
+        setError("Failed to load grading setup");
+      } finally {
+        setIsLoadingSetup(false);
+      }
+    }
+    loadSetup();
+  }, []);
+
+  // ─── Load students when class/subject selected ──────────────────────────────
+  // When selectedClassId changes, load students for that class
+  React.useEffect(() => {
+    async function loadStudents() {
+      if (!selectedClassId || !activeTerm) return;
+      setIsLoadingStudents(true);
+      try {
+        // Backend now enforces scoping — teacher gets only their students
+        const res = await api.get("/users/students", {
+          params: { classId: selectedClassId },
+        });
+        setStudents(res.data);
+
+        // Load existing grades for this class+subject+term
+        if (selectedSubjectId) {
+          const gradeRows: Record<string, GradeRow> = {};
+          for (const student of res.data) {
+            const existing = await api
+              .get(`/grading/students/${student.id}/terms/${activeTerm.id}`)
+              .catch(() => ({ data: [] }));
+
+            const gradeForSubject = (existing.data as any[]).find(
+              (g: any) => g.subjectId === selectedSubjectId,
+            );
+
+            gradeRows[student.id] = {
+              studentId: student.id,
+              subjectId: selectedSubjectId,
+              termId: activeTerm.id,
+              classScore: gradeForSubject?.classScore ?? 0,
+              examScore: gradeForSubject?.examScore ?? 0,
+              totalScore: gradeForSubject?.totalScore ?? null,
+              grade: gradeForSubject?.grade ?? null,
+              remark: gradeForSubject?.remark ?? "",
+              hasObservation: gradeForSubject?.hasObservation ?? false,
+              observationText: gradeForSubject?.observationText ?? "",
+              entryId: gradeForSubject?.id ?? null,
+              isLocked: gradeForSubject?.isLocked ?? false,
+              isApproved: gradeForSubject?.isApproved ?? false,
+            };
+          }
+          setGradeRows(gradeRows);
+        }
+      } catch (err) {
+        console.error("Failed to load students", err);
+        setStudents([]);
       } finally {
         setIsLoadingStudents(false);
       }
@@ -429,40 +430,43 @@ export function GradingSheet() {
 
   // ─── Save a single student's grade ──────────────────────────────────────────
   const saveGrade = async (studentId: string) => {
-  if (isTermFinalized || !activeTerm) return;
-  const row = gradeRows[studentId];
-  if (!row) return;
+    if (isTermFinalized || !activeTerm) return;
+    const row = gradeRows[studentId];
+    if (!row) return;
 
-  setSavingStudentId(studentId);
-  try {
-    const res = await api.post('/grading/entries', {
-      studentId: row.studentId,
-      subjectId: row.subjectId,
-      termId: row.termId,
-      classScore: row.classScore,
-      examScore: row.examScore,
-      remark: row.remark || undefined,
-      hasObservation: row.hasObservation,
-      observationText: row.observationText || undefined,
-    });
+    setSavingStudentId(studentId);
+    try {
+      const res = await api.post("/grading/entries", {
+        studentId: row.studentId,
+        subjectId: row.subjectId,
+        termId: row.termId,
+        classScore: row.classScore,
+        examScore: row.examScore,
+        remark: row.remark || undefined,
+        hasObservation: row.hasObservation,
+        observationText: row.observationText || undefined,
+      });
 
-    setGradeRows(prev => ({
-      ...prev,
-      [studentId]: { ...prev[studentId], entryId: res.data.id },
-    }));
+      setGradeRows((prev) => ({
+        ...prev,
+        [studentId]: { ...prev[studentId], entryId: res.data.id },
+      }));
 
-    setSuccessMsg(`Grade saved for ${students.find(s => s.id === studentId)?.firstName}`);
-    setTimeout(() => setSuccessMsg(null), 3000);
-  } catch (err: any) {
-    const msg = err.response?.status === 403
-      ? `Access denied: ${err.response?.data?.message ?? 'you are not assigned to this subject/class'}`
-      : err.response?.data?.message || 'Failed to save grade';
-    setError(msg);
-    setTimeout(() => setError(null), 5000);
-  } finally {
-    setSavingStudentId(null);
-  }
-};
+      setSuccessMsg(
+        `Grade saved for ${students.find((s) => s.id === studentId)?.firstName}`,
+      );
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err: any) {
+      const msg =
+        err.response?.status === 403
+          ? `Access denied: ${err.response?.data?.message ?? "you are not assigned to this subject/class"}`
+          : err.response?.data?.message || "Failed to save grade";
+      setError(msg);
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setSavingStudentId(null);
+    }
+  };
 
   // ─── Save all grades (bulk) ─────────────────────────────────────────────────
   const saveAllGrades = async () => {
@@ -557,41 +561,46 @@ export function GradingSheet() {
 
   // ─── Submit to HOD ──────────────────────────────────────────────────────────
   const handleSubmitToHOD = async () => {
-  if (!selectedClass || !selectedSubject) return;
-  setIsSubmitting(true);
-  try {
-    await saveAllGrades();
+    if (!selectedClass || !selectedSubject) return;
+    setIsSubmitting(true);
+    try {
+      await saveAllGrades();
 
-    // Find the HOD for this subject's department
-    const staffRes = await api.get('/users/staff');
-    const hods = staffRes.data.filter((s: any) =>
-      s.user?.role === 'HOD' &&
-      (s.departmentId === (selectedSubject as any).departmentId ||
-       s.department?.id === (selectedSubject as any).departmentId)
-    );
+      // Find the HOD for this subject's department
+      const staffRes = await api.get("/users/staff");
+      const hods = staffRes.data.filter(
+        (s: any) =>
+          s.user?.role === "HOD" &&
+          (s.departmentId === (selectedSubject as any).departmentId ||
+            s.department?.id === (selectedSubject as any).departmentId),
+      );
 
-    if (hods.length === 0) {
-      setSuccessMsg('Grades saved. No HOD found for this department to notify.');
+      if (hods.length === 0) {
+        setSuccessMsg(
+          "Grades saved. No HOD found for this department to notify.",
+        );
+        setTimeout(() => setSuccessMsg(null), 4000);
+        return;
+      }
+
+      const hodIds = hods.map((h: any) => h.id);
+      await api.post("/comms/notify-staff", {
+        staffIds: hodIds,
+        title: "Grade Submission for Review",
+        body: `${user?.name} submitted grades for ${selectedSubject.name} — ${selectedClass.level.replace("FORM_", "Form ")} ${selectedClass.name}. ${students.length} students, ${Object.values(gradeRows).filter((r) => r.classScore > 0 || r.examScore > 0).length} entries.`,
+      });
+
+      setSuccessMsg(
+        `Grades submitted — ${hods.length} HOD${hods.length > 1 ? "s" : ""} notified`,
+      );
       setTimeout(() => setSuccessMsg(null), 4000);
-      return;
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Submission failed");
+      setTimeout(() => setError(null), 4000);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const hodIds = hods.map((h: any) => h.id);
-    await api.post('/comms/notify-staff', {
-      staffIds: hodIds,
-      title: 'Grade Submission for Review',
-      body: `${user?.name} submitted grades for ${selectedSubject.name} — ${selectedClass.level.replace('FORM_', 'Form ')} ${selectedClass.name}. ${students.length} students, ${Object.values(gradeRows).filter(r => r.classScore > 0 || r.examScore > 0).length} entries.`,
-    });
-
-    setSuccessMsg(`Grades submitted — ${hods.length} HOD${hods.length > 1 ? 's' : ''} notified`);
-    setTimeout(() => setSuccessMsg(null), 4000);
-  } catch (err: any) {
-    setError(err.response?.data?.message || 'Submission failed');
-    setTimeout(() => setError(null), 4000);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   // ─── STP Validation ─────────────────────────────────────────────────────────
   const stpErrors = React.useMemo(() => {
@@ -731,14 +740,17 @@ export function GradingSheet() {
               {/* Class selector */}
               <select
                 value={selectedClassId}
-                onChange={e => {
-  setSelectedClassId(e.target.value);
-  // Auto-select first subject for this class (teacher view)
-  if (user?.role === 'TEACHER') {
-    const firstAssignment = teacherAssignments.find(a => a.classSectionId === e.target.value);
-    if (firstAssignment) setSelectedSubjectId(firstAssignment.subjectId);
-  }
-}}
+                onChange={(e) => {
+                  setSelectedClassId(e.target.value);
+                  // Auto-select first subject for this class (teacher view)
+                  if (user?.role === "TEACHER") {
+                    const firstAssignment = teacherAssignments.find(
+                      (a) => a.classSectionId === e.target.value,
+                    );
+                    if (firstAssignment)
+                      setSelectedSubjectId(firstAssignment.subjectId);
+                  }
+                }}
                 className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none"
               >
                 {classes.map((c) => (
@@ -749,18 +761,20 @@ export function GradingSheet() {
               </select>
 
               {/* Subject selector */}
-             {/* Subject selector */}
-<select
-  value={selectedSubjectId}
-  onChange={e => setSelectedSubjectId(e.target.value)}
-  className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none"
->
-  {availableSubjectsForClass.map(s => (
-    <option key={s.id} value={s.id}>{s.name}</option>
-  ))}
-</select>
+              {/* Subject selector */}
+              <select
+                value={selectedSubjectId}
+                onChange={(e) => setSelectedSubjectId(e.target.value)}
+                className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none"
+              >
+                {availableSubjectsForClass.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
 
-             {/*  <button
+              {/*  <button
                 onClick={() => setShowSTPOverlay(true)}
                 className="p-2.5 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-all flex items-center gap-2 font-black text-xs uppercase tracking-widest"
               >
@@ -921,7 +935,7 @@ export function GradingSheet() {
                         {/* Total */}
                         <td className="px-4 py-3 border-r border-gray-100 text-center">
                           <span className="text-sm font-black text-slate-900">
-                            {row.totalScore.toFixed(1)}
+                            {Number(row.totalScore ?? 0).toFixed(1)}
                           </span>
                         </td>
 
