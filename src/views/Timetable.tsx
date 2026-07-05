@@ -19,8 +19,10 @@ import {
   Settings2,
   Edit3,
   CheckCircle2,
+  Printer,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { printTimetable } from '../lib/timetable';
 import { cn } from "../lib/utils";
 import { useRole } from "../context/RoleContext";
 import api from "../lib/api";
@@ -62,7 +64,7 @@ interface StaffMember {
   lastName: string;
   staffId: string;
 }
-interface SchoolSettings {
+export interface SchoolSettings {
   id: string;
   clashDetectionEnabled: boolean;
   departmentColorsEnabled: boolean;
@@ -497,10 +499,23 @@ export function Timetable() {
     }
   }, [user]);
 
+  //print timetable handler
+const handlePrint = () => {
+  printTimetable({
+    entries,
+    clashes,
+    settings,
+    activeTerm: null,
+    userName: user?.name,
+    userRole: user?.role,
+  });
+};
+
   React.useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  
   const handleToggleSetting = async (
     key: "clashDetectionEnabled" | "departmentColorsEnabled",
   ) => {
@@ -595,6 +610,8 @@ export function Timetable() {
     room: "",
   };
 
+
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F0F4F2]">
@@ -683,6 +700,13 @@ export function Timetable() {
                 </button>
               ))}
             </div>
+            <button
+  onClick={handlePrint}
+  className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-slate-700 transition-all"
+  title="Print timetable"
+>
+  <Printer size={16} />
+</button>
             {canManage && (
               <>
                 <button
