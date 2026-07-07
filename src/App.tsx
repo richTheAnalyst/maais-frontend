@@ -176,7 +176,7 @@ function AppContent() {
         <main className="flex-1 flex overflow-hidden relative">
           <Routes>
             <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
-<Route path="/dashboard/hod" element={<HODDashboard />} />
+            <Route path="/dashboard/hod" element={<HODDashboard />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/revisions" element={<RevisionsFeed />} />
             <Route
@@ -190,7 +190,7 @@ function AppContent() {
                   <StudentTimetable />
                 ) : user?.role === "SUPER_ADMIN" ||
                   user?.role === "HEADMASTER" ? (
-                 <Timetable />
+                  <Timetable />
                 ) : (
                   <Timetable />
                 )
@@ -233,12 +233,12 @@ function AppContent() {
               path="/settings"
               element={
                 user?.role === "STUDENT" ? (
-                  <StudentSettings />
+                 <SettingsView />
                 ) : user?.role === "HOD" ? (
-                  <HODSettings />
+                  <SettingsView />
                 ) : user?.role === "SUPER_ADMIN" ||
                   user?.role === "HEADMASTER" ? (
-                  <AdminSettings />
+                  <SettingsView />
                 ) : (
                   <SettingsView />
                 )
@@ -277,11 +277,11 @@ function AppContent() {
         title="Identity & Security Control"
       >
         {user?.role === "STUDENT" ? (
-          <StudentSettings />
+          <SettingsView />
         ) : user?.role === "HOD" ? (
-          <HODSettings />
+          <SettingsView />
         ) : user?.role === "SUPER_ADMIN" || user?.role === "HEADMASTER" ? (
-          <AdminSettings />
+          <SettingsView />
         ) : (
           <SettingsView />
         )}
