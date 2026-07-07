@@ -229,7 +229,7 @@ export function SettingsView() {
   const [editTarget, setEditTarget] = React.useState<any>(null);
 
   // Derived
-  const canManagePeople = user?.role === 'ADMIN' || user?.role === 'HOD';
+  const canManagePeople = user?.role === 'SUPER_ADMIN' || user?.role === 'HOD';
 
   // ─── Load my own profile ────────────────────────────────────────────────────
   const loadMyProfile = React.useCallback(async () => {
