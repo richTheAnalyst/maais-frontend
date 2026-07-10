@@ -76,11 +76,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    api.post('/auth/logout', { refreshToken }).catch(() => {});
-    localStorage.clear();
-    setUser(null);
-  };
+  const refreshToken = localStorage.getItem('refreshToken');
+  // Fire and forget — don't await, don't block on failure
+  api.post('/auth/logout', { refreshToken }).catch(() => {});
+  // Always clear immediately regardless of server response
+  localStorage.clear();
+  setUser(null);
+};
 
   const setRole = (role: UserRole) => {
     if (user) setUser({ ...user, role });
