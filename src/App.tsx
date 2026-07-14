@@ -33,15 +33,12 @@ import { AcademicArchitect } from "./views/AcademicArchitect";
 import { FinanceView } from "./views/FinanceView";
 import { CommsView } from "./views/CommsView";
 import { GradingRulesView } from "./views/GradingRulesView";
-import { SchedulingView } from "./views/SchedulingView";
 import { AcademicSetup } from "./views/AcademicSetup";
 import { UIProvider, useUI } from "./context/UIContext";
 import { useRole } from "./context/RoleContext";
 import { SettingsView } from "./views/SettingsView";
 import { SupportView } from "./views/SupportView";
-import { StudentSettings } from "./views/StudentSettings";
 import { StudentSupport } from "./views/StudentSupport";
-import { HODSettings } from "./views/HODSettings";
 import { HODSupport } from "./views/HODSupport";
 import { MobileDrawer } from "./components/MobileDrawer";
 import { MobileBottomNav } from "./components/MobileBottomNav";
@@ -49,7 +46,7 @@ import { PerformanceAnalytics } from "./views/PerformanceAnalytics";
 import { GraduationCap } from "lucide-react";
 import { X } from "lucide-react";
 import { RoleProvider } from "./context/RoleContext";
-
+import { InstallPrompt } from './components/InstallPrompt'
 import { motion, AnimatePresence } from "framer-motion";
 
 function Modal({
@@ -199,7 +196,6 @@ function AppContent() {
             <Route path="/archive" element={<ArchiveView />} />
             <Route path="/grading" element={<GradingSheet />} />
             <Route path="/grading-rules" element={<GradingRulesView />} />
-            // in your routes — accessible to TEACHER and HOD:
             <Route path="/analytics" element={<PerformanceAnalytics />} />
             <Route path="/finance" element={<FinanceView />} />
             <Route path="/comms" element={<CommsView />} />
@@ -270,6 +266,7 @@ function AppContent() {
 
       <MobileDrawer />
       <MobileBottomNav />
+      <InstallPrompt />
 
       <Modal
         isOpen={settingsModalOpen}
@@ -308,6 +305,7 @@ function AppContent() {
 
 export default function App() {
   return (
+    <>
     <Router>
       <RoleProvider>
         <UIProvider>
@@ -315,5 +313,7 @@ export default function App() {
         </UIProvider>
       </RoleProvider>
     </Router>
+    <InstallPrompt />
+    </>
   );
 }
