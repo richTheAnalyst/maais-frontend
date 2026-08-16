@@ -45,13 +45,13 @@ export default function Login() {
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight">MAMPTS</h1>
-              <p className="text-emerald-200/80 text-sm font-medium -mt-1">Academic Audit & Intervention System</p>
+              <p className="text-emerald-200/80 text-sm font-medium -mt-1">Academic Management And Performance Tracking System</p>
             </div>
           </div>
           <div className="mt-20 max-w-md">
             <h2 className="text-4xl font-black text-white leading-tight">
               Welcome back to the best <br />
-              <span className="text-emerald-300">Academic Audit & Intervention System</span>
+              <span className="text-emerald-300">Academic Management And Performance Tracking System</span>
             </h2>
             <p className="mt-4 text-emerald-100/70 text-lg font-medium leading-relaxed">
               Securely access your academic dashboard, manage grades, and oversee institutional performance.
@@ -81,8 +81,8 @@ export default function Login() {
             <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg shadow-emerald-200">
               <GraduationCap className="text-white" size={32} />
             </div>
-            <h1 className="text-2xl font-black text-gray-900">MAAIS Portal</h1>
-            <p className="text-gray-500 font-medium">Academic Audit & Intervention System</p>
+            <h1 className="text-2xl font-black text-gray-900">MAPTS Portal</h1>
+            <p className="text-gray-500 font-medium">Academic Management And Performance Tracking System</p>
           </div>
 
           <div className="bg-white rounded-3xl shadow-2xl border border-gray-100/80 p-8 md:p-10">
