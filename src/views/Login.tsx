@@ -44,7 +44,7 @@ export default function Login() {
               <GraduationCap className="text-white" size={28} />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight">MAAIS</h1>
+              <h1 className="text-2xl font-black tracking-tight">MAMPTS</h1>
               <p className="text-emerald-200/80 text-sm font-medium -mt-1">Academic Audit & Intervention System</p>
             </div>
           </div>
